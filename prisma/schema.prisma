@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  image        String?
+  role         Role     @default(USER)
+  active       Boolean  @default(true)
+  accessStart  DateTime @default(now())
+  accessEnd    DateTime @default(dbgenerated("now() + interval '30 days'"))
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Document {
+  id            String      @id @default(cuid())
+  originalName  String
+  fileName      String      @unique
+  contentType   String
+  fileSize      Int
+  uploadedBy    String
+  accessLevel   AccessLevel @default(ADMIN_ONLY)
+
+  // File content stored in database
+  fileContent   Bytes?
+  extractedText String?
+  redactedText  String?
+
+  // Metadata
+  title         String?
+  court         String?
+  judge         String?
+  caseNumber    String?
+  parties       String?
+  dateDecided   DateTime?
+  keywords      String[]
+  summary       String?
+
+  // Arabic-specific fields
+  winningParty  String?     // الطرف_الفائز
+  victoryType   String?     // نوع_الفوز
+  field         String?     // المجال
+  outcome       String?     // النتيجة
+  
+  encrypted     Boolean     @default(false)
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  searchLogs    SearchLog[]
+
+  @@map("documents")
+}
+
+model SearchLog {
+  id         String   @id @default(cuid())
+  userId     String
+  query      String
+  documentId String?
+  action     String
+  results    Int?
+  createdAt  DateTime @default(now())
+
+  document   Document? @relation(fields: [documentId], references: [id])
+
+  @@map("search_logs")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum AccessLevel {
+  PUBLIC
+  USER_ONLY
+  ADMIN_ONLY
+}
