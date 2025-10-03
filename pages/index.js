@@ -239,9 +239,10 @@ export default function Home() {
             max-width: 1200px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 40px;
             margin-bottom: 40px;
+            direction: rtl;
           }
 
           .footer-section h3 {
