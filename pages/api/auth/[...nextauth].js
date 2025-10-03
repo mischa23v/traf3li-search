@@ -1,13 +1,8 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import { PrismaAdapter } from '@next-auth/prisma-adapter';
-import { PrismaClient } from '@prisma/client';
-
-// Create Prisma client directly here
-const prisma = new PrismaClient();
+import { prisma } from '../../../lib/prisma';
 
 export const authOptions = {
-  adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -15,11 +10,37 @@ export const authOptions = {
     })
   ],
   callbacks: {
-    async session({ session, user }) {
-      if (user) {
-        session.user.id = user.id;
-        session.user.role = user.role;
-        session.user.authorized = user.active;
+    async signIn({ user, account, profile }) {
+      // Check if user exists, if not create them
+      const existingUser = await prisma.user.findUnique({
+        where: { email: user.email }
+      });
+
+      if (!existingUser) {
+        await prisma.user.create({
+          data: {
+            email: user.email,
+            name: user.name,
+            image: user.image,
+            role: 'USER',
+            active: true
+          }
+        });
+      }
+
+      return true;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: session.user.email }
+        });
+
+        if (dbUser) {
+          session.user.id = dbUser.id;
+          session.user.role = dbUser.role;
+          session.user.authorized = dbUser.active;
+        }
       }
       return session;
     }
