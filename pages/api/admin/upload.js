@@ -24,7 +24,6 @@ function encryptBuffer(buffer) {
 }
 
 function redactText(text) {
-  // Basic redaction - enhance as needed
   return text
     .replace(/\b\d{10,}\b/g, '[REDACTED_ID]')
     .replace(/\b\d{3}-\d{3}-\d{4}\b/g, '[REDACTED_PHONE]');
@@ -42,15 +41,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Check document limit
     const count = await prisma.document.count();
     if (count >= 30) {
       return res.status(400).json({ error: 'Maximum 30 documents allowed' });
     }
 
-    // Parse form data
     const form = formidable({
-      maxFileSize: 10 * 1024 * 1024, // 10MB
+      maxFileSize: 10 * 1024 * 1024,
       keepExtensions: true,
     });
 
@@ -66,25 +63,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Validate file type
     if (!file.originalFilename?.endsWith('.txt')) {
       return res.status(400).json({ error: 'Only .txt files allowed' });
     }
 
-    // Read file content
     const fileBuffer = fs.readFileSync(file.filepath);
     const text = fileBuffer.toString('utf8');
-
-    // Extract metadata
     const metadata = extractLegalMetadata(text);
-
-    // Encrypt content
     const encrypted = encryptBuffer(fileBuffer);
-
-    // Redact text
     const redacted = redactText(text);
 
-    // Create document record
     const doc = await prisma.document.create({
       data: {
         originalName: file.originalFilename,
@@ -97,8 +85,6 @@ export default async function handler(req, res) {
         extractedText: text,
         redactedText: redacted,
         encrypted: true,
-        
-        // Metadata
         title: metadata.title,
         court: metadata.court,
         judge: metadata.judge,
@@ -114,7 +100,6 @@ export default async function handler(req, res) {
       },
     });
 
-    // Clean up temp file
     fs.unlinkSync(file.filepath);
 
     return res.status(200).json({
