@@ -9,31 +9,43 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET
     })
   ],
+  session: {
+    strategy: 'jwt'
+  },
   callbacks: {
     async signIn({ user, account, profile }) {
-      // Check if user exists, if not create them
-      const existingUser = await prisma.user.findUnique({
-        where: { email: user.email }
-      });
-
-      if (!existingUser) {
-        await prisma.user.create({
-          data: {
-            email: user.email,
-            name: user.name,
-            image: user.image,
-            role: 'USER',
-            active: true
-          }
+      try {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email }
         });
-      }
 
-      return true;
+        if (!existingUser) {
+          await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name,
+              image: user.image,
+              role: 'USER',
+              active: true
+            }
+          });
+        }
+        return true;
+      } catch (error) {
+        console.error('SignIn error:', error);
+        return false;
+      }
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.email = user.email;
+      }
+      return token;
     },
     async session({ session, token }) {
-      if (session.user) {
+      if (token?.email) {
         const dbUser = await prisma.user.findUnique({
-          where: { email: session.user.email }
+          where: { email: token.email }
         });
 
         if (dbUser) {
@@ -45,7 +57,10 @@ export const authOptions = {
       return session;
     }
   },
-  secret: process.env.NEXTAUTH_SECRET
+  secret: process.env.NEXTAUTH_SECRET,
+  pages: {
+    error: '/'
+  }
 };
 
 export default NextAuth(authOptions);
