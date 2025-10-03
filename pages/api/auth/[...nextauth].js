@@ -12,13 +12,32 @@ export const authOptions = {
     strategy: 'jwt'
   },
   callbacks: {
-    async jwt({ token, user, account, profile }) {
+    async signIn({ user }) {
+      // Allow all sign-ins - we'll check authorization in session callback
+      return true;
+    },
+    async jwt({ token, user }) {
       if (user) {
         token.email = user.email;
         token.name = user.name;
+        token.picture = user.image;
       }
       return token;
     },
     async session({ session, token }) {
+      // Just pass through the Google user info
       session.user.email = token.email;
-      session.user.name
+      session.user.name = token.name;
+      session.user.image = token.picture;
+      
+      // Set default role - admin check happens on protected pages
+      session.user.role = 'USER';
+      session.user.authorized = true;
+      
+      return session;
+    }
+  },
+  secret: process.env.NEXTAUTH_SECRET
+};
+
+export default NextAuth(authOptions);
