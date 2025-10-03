@@ -36,13 +36,22 @@ export default function AdminUpload() {
         method: 'POST',
         body: formData
       });
+      
+      // Check if response is ok before parsing JSON
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Upload failed: ${res.status} - ${errorText}`);
+      }
+      
       const data = await res.json();
       setResult(data);
+      
       if (data.success) {
         setFile(null);
         document.querySelector('input[type="file"]').value = '';
       }
     } catch (err) {
+      console.error('Upload error:', err);
       setResult({ error: err.message });
     }
     setUploading(false);
