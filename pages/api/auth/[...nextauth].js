@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
+import { PrismaClient } from '@prisma/client';
 
 export const authOptions = {
   providers: [
@@ -13,7 +14,6 @@ export const authOptions = {
   },
   callbacks: {
     async signIn({ user }) {
-      // Allow all sign-ins - we'll check authorization in session callback
       return true;
     },
     async jwt({ token, user }) {
@@ -25,14 +25,39 @@ export const authOptions = {
       return token;
     },
     async session({ session, token }) {
-      // Just pass through the Google user info
-      session.user.email = token.email;
-      session.user.name = token.name;
-      session.user.image = token.picture;
-      
-      // Set default role - admin check happens on protected pages
-      session.user.role = 'USER';
-      session.user.authorized = true;
+      if (token?.email) {
+        const prisma = new PrismaClient();
+        
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: token.email }
+          });
+
+          if (dbUser) {
+            session.user.id = dbUser.id;
+            session.user.role = dbUser.role;
+            session.user.authorized = dbUser.active;
+            session.user.email = dbUser.email;
+            session.user.name = dbUser.name;
+            session.user.image = token.picture;
+          } else {
+            session.user.email = token.email;
+            session.user.name = token.name;
+            session.user.image = token.picture;
+            session.user.role = 'USER';
+            session.user.authorized = false;
+          }
+        } catch (error) {
+          console.error('Session lookup error:', error);
+          session.user.email = token.email;
+          session.user.name = token.name;
+          session.user.image = token.picture;
+          session.user.role = 'USER';
+          session.user.authorized = false;
+        } finally {
+          await prisma.$disconnect();
+        }
+      }
       
       return session;
     }
