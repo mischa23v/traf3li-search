@@ -1,7 +1,10 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
-import { prisma } from '../../../lib/prisma';
+import { PrismaClient } from '@prisma/client';
+
+// Create Prisma client directly here
+const prisma = new PrismaClient();
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
@@ -13,23 +16,15 @@ export const authOptions = {
   ],
   callbacks: {
     async session({ session, user }) {
-      const dbUser = await prisma.user.findUnique({
-        where: { email: session.user.email }
-      });
-      
-      if (dbUser) {
-        session.user.id = dbUser.id;
-        session.user.role = dbUser.role;
-        session.user.authorized = dbUser.active;
+      if (user) {
+        session.user.id = user.id;
+        session.user.role = user.role;
+        session.user.authorized = user.active;
       }
-      
       return session;
     }
   },
-  secret: process.env.NEXTAUTH_SECRET,
-  pages: {
-    signIn: '/',
-  }
+  secret: process.env.NEXTAUTH_SECRET
 };
 
 export default NextAuth(authOptions);
