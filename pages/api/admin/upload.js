@@ -1,185 +1,132 @@
-import { useSession } from 'next-auth/react';
-import { useState } from 'react';
-import { useRouter } from 'next/router';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
+import { prisma } from '../../../lib/prisma';
+import formidable from 'formidable';
+import fs from 'fs';
+import crypto from 'crypto';
+import { extractLegalMetadata } from '../../../lib/legalParser';
 
-export default function AdminUpload() {
-  const { data: session } = useSession();
-  const router = useRouter();
-  const [file, setFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [result, setResult] = useState(null);
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
-  if (!session) {
-    return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
+function encryptBuffer(buffer) {
+  const key = process.env.DOCUMENT_ENCRYPTION_KEY;
+  if (!key) return buffer;
+  
+  const keybuf = Buffer.from(key, 'base64');
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', keybuf, iv);
+  const encrypted = Buffer.concat([cipher.update(buffer), cipher.final()]);
+  return Buffer.concat([iv, encrypted]);
+}
+
+function redactText(text) {
+  // Basic redaction - enhance as needed
+  return text
+    .replace(/\b\d{10,}\b/g, '[REDACTED_ID]')
+    .replace(/\b\d{3}-\d{3}-\d{4}\b/g, '[REDACTED_PHONE]');
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (session.user.role !== 'ADMIN') {
-    return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <h2>Admin Access Required</h2>
-        <button onClick={() => router.push('/')}>Back to Home</button>
-      </div>
-    );
+  const session = await getServerSession(req, res, authOptions);
+  
+  if (!session?.user || session.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Admin access required' });
   }
 
-  async function handleUpload(e) {
-    e.preventDefault();
-    if (!file) return;
-
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('document', file);
-    formData.append('accessLevel', 'USER_ONLY');
-
-    try {
-      const res = await fetch('/api/admin/upload', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      setResult(data);
-      if (data.success) {
-        setFile(null);
-        // Reset file input
-        document.querySelector('input[type="file"]').value = '';
-      }
-    } catch (err) {
-      setResult({ error: err.message });
+  try {
+    // Check document limit
+    const count = await prisma.document.count();
+    if (count >= 30) {
+      return res.status(400).json({ error: 'Maximum 30 documents allowed' });
     }
-    setUploading(false);
+
+    // Parse form data
+    const form = formidable({
+      maxFileSize: 10 * 1024 * 1024, // 10MB
+      keepExtensions: true,
+    });
+
+    const [fields, files] = await new Promise((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) reject(err);
+        else resolve([fields, files]);
+      });
+    });
+
+    const file = files.document?.[0] || files.document;
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Validate file type
+    if (!file.originalFilename?.endsWith('.txt')) {
+      return res.status(400).json({ error: 'Only .txt files allowed' });
+    }
+
+    // Read file content
+    const fileBuffer = fs.readFileSync(file.filepath);
+    const text = fileBuffer.toString('utf8');
+
+    // Extract metadata
+    const metadata = extractLegalMetadata(text);
+
+    // Encrypt content
+    const encrypted = encryptBuffer(fileBuffer);
+
+    // Redact text
+    const redacted = redactText(text);
+
+    // Create document record
+    const doc = await prisma.document.create({
+      data: {
+        originalName: file.originalFilename,
+        fileName: `doc_${Date.now()}_${file.originalFilename}`,
+        contentType: file.mimetype || 'text/plain',
+        fileSize: file.size,
+        uploadedBy: session.user.email,
+        accessLevel: fields.accessLevel?.[0] || fields.accessLevel || 'USER_ONLY',
+        fileContent: encrypted,
+        extractedText: text,
+        redactedText: redacted,
+        encrypted: true,
+        
+        // Metadata
+        title: metadata.title,
+        court: metadata.court,
+        judge: metadata.judge,
+        caseNumber: metadata.caseNumber,
+        parties: metadata.parties,
+        dateDecided: metadata.dateDecided,
+        keywords: metadata.keywords,
+        summary: metadata.summary,
+        winningParty: metadata.winningParty,
+        victoryType: metadata.victoryType,
+        field: metadata.field,
+        outcome: metadata.outcome,
+      },
+    });
+
+    // Clean up temp file
+    fs.unlinkSync(file.filepath);
+
+    return res.status(200).json({
+      success: true,
+      documentId: doc.id,
+      extractedInfo: metadata,
+    });
+
+  } catch (error) {
+    console.error('Upload error:', error);
+    return res.status(500).json({ 
+      error: 'Upload failed: ' + error.message 
+    });
   }
-
-  return (
-    <div style={{ maxWidth: '600px', margin: '40px auto', padding: '20px' }}>
-      <button 
-        onClick={() => router.push('/')} 
-        style={{ 
-          marginBottom: '20px',
-          padding: '8px 16px',
-          background: '#6c757d',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer'
-        }}
-      >
-        ← Back to Search
-      </button>
-
-      <h2 style={{ marginBottom: '8px' }}>Upload Legal Document</h2>
-      <p style={{ color: '#666', marginBottom: '24px' }}>
-        Only .txt files with Arabic legal judgments
-      </p>
-
-      <form onSubmit={handleUpload}>
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-            Select Document (.txt)
-          </label>
-          <input 
-            type="file" 
-            accept=".txt"
-            onChange={(e) => setFile(e.target.files[0])}
-            style={{ 
-              width: '100%', 
-              padding: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px'
-            }}
-          />
-        </div>
-
-        {file && (
-          <div style={{ 
-            marginBottom: '16px', 
-            padding: '8px', 
-            background: '#e9ecef',
-            borderRadius: '4px',
-            fontSize: '14px'
-          }}>
-            Selected: {file.name} ({(file.size / 1024).toFixed(1)} KB)
-          </div>
-        )}
-
-        <button 
-          type="submit" 
-          disabled={uploading || !file}
-          style={{
-            padding: '12px 24px',
-            background: uploading || !file ? '#ccc' : '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: uploading || !file ? 'not-allowed' : 'pointer',
-            width: '100%',
-            fontSize: '16px',
-            fontWeight: 'bold'
-          }}
-        >
-          {uploading ? 'Uploading...' : 'Upload Document'}
-        </button>
-      </form>
-
-      {result && (
-        <div style={{ 
-          marginTop: '20px', 
-          padding: '16px', 
-          background: result.error ? '#f8d7da' : '#d4edda',
-          border: `1px solid ${result.error ? '#f5c6cb' : '#c3e6cb'}`,
-          borderRadius: '4px',
-          direction: 'rtl'
-        }}>
-          {result.error ? (
-            <div style={{ color: '#721c24' }}>
-              <strong>Error:</strong> {result.error}
-            </div>
-          ) : (
-            <div style={{ color: '#155724' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '12px', fontSize: '16px' }}>
-                ✓ Uploaded Successfully
-              </div>
-              {result.extractedInfo && (
-                <div style={{ fontSize: '14px', lineHeight: 1.6 }}>
-                  {result.extractedInfo.title && (
-                    <div>العنوان: {result.extractedInfo.title}</div>
-                  )}
-                  {result.extractedInfo.court && (
-                    <div>المحكمة: {result.extractedInfo.court}</div>
-                  )}
-                  {result.extractedInfo.caseNumber && (
-                    <div>رقم القضية: {result.extractedInfo.caseNumber}</div>
-                  )}
-                  {result.extractedInfo.winningParty && (
-                    <div>الطرف الفائز: {result.extractedInfo.winningParty}</div>
-                  )}
-                  {result.extractedInfo.keywords && result.extractedInfo.keywords.length > 0 && (
-                    <div style={{ marginTop: '8px' }}>
-                      <strong>الكلمات المفتاحية:</strong> {result.extractedInfo.keywords.join('، ')}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div style={{ 
-        marginTop: '32px', 
-        padding: '16px', 
-        background: '#f8f9fa',
-        borderRadius: '4px',
-        fontSize: '13px',
-        color: '#666'
-      }}>
-        <strong>Notes:</strong>
-        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
-          <li>Maximum 30 documents allowed</li>
-          <li>Only .txt format accepted</li>
-          <li>Documents are encrypted and redacted automatically</li>
-          <li>Arabic legal judgments with structured tags work best</li>
-        </ul>
-      </div>
-    </div>
-  );
 }
