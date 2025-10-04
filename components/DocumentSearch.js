@@ -11,6 +11,13 @@ function useDebounce(value, delay) {
   return v;
 }
 
+// Fixed topic structure
+const MAIN_TOPICS = {
+  'أجر': ['أجر فعلي', 'أجر إجازات'],
+  'مكافأة': ['مكافأة نهاية الخدمة'],
+  'التعويض': ['التعويض عن الإنهاء الغير مشروع']
+};
+
 export default function DocumentSearch() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -58,16 +65,8 @@ export default function DocumentSearch() {
     }
   }, [debounced, filters, session]);
 
-  // Filter subtitles based on selected mainTitle
-  const getFilteredSubTitles = () => {
-    if (!filters.mainTitle || !aggregations.subTitles) {
-      return [];
-    }
-    
-    return aggregations.subTitles.filter(s => s.mainTitle === filters.mainTitle);
-  };
-
-  const filteredSubTitles = getFilteredSubTitles();
+  // Get subtitles for selected main title
+  const availableSubTitles = filters.mainTitle ? MAIN_TOPICS[filters.mainTitle] || [] : [];
 
   if (!session?.user?.authorized) {
     return (
@@ -166,9 +165,9 @@ export default function DocumentSearch() {
           }}
         >
           <option value="">الموضوع الرئيسي (الكل)</option>
-          {aggregations.mainTitles?.map(m => (
-            <option key={m.mainTitle} value={m.mainTitle}>
-              {m.mainTitle} ({m._count.mainTitle.toLocaleString('ar-SA')})
+          {Object.keys(MAIN_TOPICS).map(topic => (
+            <option key={topic} value={topic}>
+              {topic}
             </option>
           ))}
         </select>
@@ -187,9 +186,9 @@ export default function DocumentSearch() {
           }}
         >
           <option value="">الموضوع الفرعي (الكل)</option>
-          {filteredSubTitles.map(s => (
-            <option key={s.subTitle} value={s.subTitle}>
-              {s.subTitle} ({s._count.subTitle.toLocaleString('ar-SA')})
+          {availableSubTitles.map(subTopic => (
+            <option key={subTopic} value={subTopic}>
+              {subTopic}
             </option>
           ))}
         </select>
