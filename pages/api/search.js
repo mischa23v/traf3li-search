@@ -12,8 +12,7 @@ export default async function handler(req, res) {
   const { 
     q: query = '', 
     court, 
-    winningParty,
-    field,
+    judgmentFor,
     dateFrom, 
     dateTo, 
     page = 1, 
@@ -39,18 +38,14 @@ export default async function handler(req, res) {
     if (query && query.trim()) {
       and.push({
         OR: [
-          { title: { contains: query, mode: 'insensitive' } },
+          { mainTitle: { contains: query, mode: 'insensitive' } },
+          { subTitle: { contains: query, mode: 'insensitive' } },
           { extractedText: { contains: query, mode: 'insensitive' } },
           { redactedText: { contains: query, mode: 'insensitive' } },
-          { parties: { contains: query, mode: 'insensitive' } },
+          { plaintiff: { contains: query, mode: 'insensitive' } },
           { court: { contains: query, mode: 'insensitive' } },
-          { judge: { contains: query, mode: 'insensitive' } },
-          { caseNumber: { contains: query, mode: 'insensitive' } },
           { summary: { contains: query, mode: 'insensitive' } },
-          { winningParty: { contains: query, mode: 'insensitive' } },
-          { victoryType: { contains: query, mode: 'insensitive' } },
-          { field: { contains: query, mode: 'insensitive' } },
-          { outcome: { contains: query, mode: 'insensitive' } },
+          { judgmentFor: { contains: query, mode: 'insensitive' } },
           { keywords: { has: query.toLowerCase() } }
         ]
       });
@@ -61,19 +56,16 @@ export default async function handler(req, res) {
       and.push({ court: { contains: court, mode: 'insensitive' } });
     }
 
-    if (winningParty) {
-      and.push({ winningParty: { contains: winningParty, mode: 'insensitive' } });
+    if (judgmentFor) {
+      and.push({ judgmentFor: { contains: judgmentFor, mode: 'insensitive' } });
     }
 
-    if (field) {
-      and.push({ field: { contains: field, mode: 'insensitive' } });
-    }
-
+    // Date range filter
     if (dateFrom || dateTo) {
       const dateFilter = {};
       if (dateFrom) dateFilter.gte = new Date(dateFrom);
       if (dateTo) dateFilter.lte = new Date(dateTo);
-      and.push({ dateDecided: dateFilter });
+      and.push({ caseDate: dateFilter });
     }
 
     const where = { AND: and };
@@ -84,25 +76,20 @@ export default async function handler(req, res) {
         where,
         select: {
           id: true,
-          title: true,
+          mainTitle: true,
+          subTitle: true,
           originalName: true,
           court: true,
-          judge: true,
-          parties: true,
-          dateDecided: true,
-          caseNumber: true,
+          plaintiff: true,
+          caseDate: true,
           keywords: true,
           summary: true,
-          redactedText: true,
-          winningParty: true,
-          victoryType: true,
-          field: true,
-          outcome: true,
+          judgmentFor: true,
           fileSize: true,
           createdAt: true
         },
         orderBy: [
-          { dateDecided: 'desc' },
+          { caseDate: 'desc' },
           { createdAt: 'desc' }
         ],
         skip: (parseInt(page) - 1) * parseInt(limit),
@@ -124,7 +111,7 @@ export default async function handler(req, res) {
     }
 
     // Get aggregations for filters
-    const [courts, winningParties, fields] = await Promise.all([
+    const [courts, judgmentFors] = await Promise.all([
       prisma.document.groupBy({
         by: ['court'],
         where: { court: { not: null } },
@@ -133,17 +120,10 @@ export default async function handler(req, res) {
         take: 10
       }),
       prisma.document.groupBy({
-        by: ['winningParty'],
-        where: { winningParty: { not: null } },
-        _count: { winningParty: true },
-        orderBy: { _count: { winningParty: 'desc' } },
-        take: 10
-      }),
-      prisma.document.groupBy({
-        by: ['field'],
-        where: { field: { not: null } },
-        _count: { field: true },
-        orderBy: { _count: { field: 'desc' } },
+        by: ['judgmentFor'],
+        where: { judgmentFor: { not: null } },
+        _count: { judgmentFor: true },
+        orderBy: { _count: { judgmentFor: 'desc' } },
         take: 10
       })
     ]);
@@ -153,7 +133,7 @@ export default async function handler(req, res) {
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / parseInt(limit)),
-      aggregations: { courts, winningParties, fields }
+      aggregations: { courts, judgmentFors }
     });
 
   } catch (error) {
