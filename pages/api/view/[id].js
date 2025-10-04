@@ -1,104 +1,147 @@
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]';
-import { prisma } from '../../../lib/prisma';
-import crypto from 'crypto';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 
-function decryptBuffer(buffer) {
-  const key = process.env.DOCUMENT_ENCRYPTION_KEY;
-  if (!key) return buffer;
-  
-  const keybuf = Buffer.from(key, 'base64');
-  const iv = buffer.slice(0, 16);
-  const ciphertext = buffer.slice(16);
-  const decipher = crypto.createDecipheriv('aes-256-cbc', keybuf, iv);
-  return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-}
+export default function DocView() {
+  const router = useRouter();
+  const { id } = router.query;
+  const { data: session, status } = useSession();
+  const [text, setText] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [metadata, setMetadata] = useState(null);
 
-export default async function handler(req, res) {
-  const session = await getServerSession(req, res, authOptions);
-  
-  if (!session?.user) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-
-  try {
-    const docId = req.query.id;
-    const doc = await prisma.document.findUnique({
-      where: { id: docId },
-      select: {
-        id: true,
-        fileContent: true,
-        encrypted: true,
-        redactedText: true,
-        mainTitle: true,
-        subTitle: true,
-        court: true,
-        plaintiff: true,
-        caseDate: true,
-        accessLevel: true,
-        judgmentFor: true,
-        summary: true
-      }
-    });
-
-    if (!doc) {
-      return res.status(404).json({ error: 'Document not found' });
-    }
-
-    // Check access level
-    const isAdmin = session.user.role === 'ADMIN';
-    if (doc.accessLevel === 'ADMIN_ONLY' && !isAdmin) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    // Get text
-    let text;
+  useEffect(() => {
+    if (status === 'loading' || !id) return;
     
-    if (isAdmin && req.query.original === 'true' && doc.fileContent) {
-      // Admin requesting original
-      let buffer = doc.fileContent;
-      if (doc.encrypted) {
-        buffer = decryptBuffer(buffer);
-      }
-      text = buffer.toString('utf8');
-    } else {
-      // Everyone else gets redacted version
-      text = doc.redactedText || 'Content not available';
+    if (!session?.user) {
+      setText('يرجى تسجيل الدخول لعرض المستندات');
+      setLoading(false);
+      return;
     }
 
-    // REMOVE TAGS SECTION FROM DISPLAY
-    text = text.replace(/---TAGS_START---[\s\S]*?---TAGS_END---\s*/g, '');
+    fetch(`/api/view/${id}`)
+      .then(async res => {
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'فشل التحميل' }));
+          setText('خطأ: ' + (err.error || 'تعذر جلب المستند'));
+          return;
+        }
+        const data = await res.json();
+        setMetadata(data.metadata);
+        setText(data.text);
+      })
+      .catch(() => setText('فشل تحميل المستند'))
+      .finally(() => setLoading(false));
+  }, [id, session, status]);
 
-    // Add watermark
-    const watermark = `\n\n--- تم الاطلاع بواسطة ${session.user.email} في ${new Date().toISOString()} ---\n\n`;
-    text = watermark + text + watermark;
-
-    // Log access
-    await prisma.searchLog.create({
-      data: {
-        userId: session.user.email,
-        query: `VIEW:${docId}`,
-        documentId: docId,
-        action: 'VIEW',
-        results: 1
-      }
-    });
-
-    res.json({
-      text,
-      metadata: {
-        mainTitle: doc.mainTitle,
-        subTitle: doc.subTitle,
-        court: doc.court,
-        plaintiff: doc.plaintiff,
-        caseDate: doc.caseDate,
-        judgmentFor: doc.judgmentFor,
-        summary: doc.summary
-      }
-    });
-
-  } catch (err) {
-    console.error('View error:', err);
-    res.status(500).json({ error: 'Failed to load document' });
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px', direction: 'rtl' }}>
+        جاري التحميل...
+      </div>
+    );
   }
+
+  const isArabic = text.match(/[\u0600-\u06FF]/);
+
+  return (
+    <div 
+      onContextMenu={(e) => e.preventDefault()} 
+      style={{ userSelect: 'none', WebkitUserSelect: 'none', direction: 'rtl' }}
+    >
+      {/* Watermark overlay */}
+      <div style={{
+        position: 'fixed',
+        top: 12,
+        right: 12,
+        opacity: 0.1,
+        fontSize: 10,
+        pointerEvents: 'none',
+        zIndex: 9999,
+        color: '#000',
+        direction: 'ltr'
+      }}>
+        {session?.user?.email} • {new Date().toLocaleString('ar-SA')}
+      </div>
+
+      <div style={{ maxWidth: '900px', margin: '40px auto', padding: '20px' }}>
+        {/* Header */}
+        <div style={{ 
+          borderBottom: '2px solid #333', 
+          paddingBottom: '16px', 
+          marginBottom: '24px'
+        }}>
+          <button 
+            onClick={() => router.push('/')}
+            style={{
+              padding: '8px 16px',
+              marginBottom: '16px',
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            ← العودة للبحث
+          </button>
+
+          <h2 style={{ margin: '8px 0' }}>
+            {metadata?.mainTitle || 'عارض المستندات'}
+          </h2>
+          {metadata?.subTitle && (
+            <h3 style={{ margin: '4px 0', fontSize: '16px', color: '#666' }}>
+              {metadata.subTitle}
+            </h3>
+          )}
+          
+          {metadata && (
+            <div style={{ 
+              fontSize: '14px', 
+              color: '#666', 
+              marginTop: '12px',
+              lineHeight: 1.8
+            }}>
+              {metadata.court && <div>المحكمة: {metadata.court}</div>}
+              {metadata.plaintiff && <div>المدعي: {metadata.plaintiff}</div>}
+              {metadata.judgmentFor && <div>الحكم لصالح: {metadata.judgmentFor}</div>}
+              {metadata.caseDate && (
+                <div>تاريخ الدعوى: {new Date(metadata.caseDate).toLocaleDateString('ar-SA')}</div>
+              )}
+              {metadata.summary && (
+                <div style={{ marginTop: '8px', fontStyle: 'italic' }}>
+                  <strong>ملخص:</strong> {metadata.summary}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Document text */}
+        <div style={{
+          whiteSpace: 'pre-wrap',
+          fontFamily: isArabic ? 'Tahoma, Arial, sans-serif' : 'Georgia, serif',
+          lineHeight: 1.8,
+          fontSize: '15px',
+          direction: isArabic ? 'rtl' : 'ltr',
+          textAlign: isArabic ? 'right' : 'left'
+        }}>
+          {text || 'لا يوجد محتوى متاح'}
+        </div>
+
+        {/* Footer warning */}
+        <div style={{
+          marginTop: '40px',
+          padding: '16px',
+          background: '#fff3cd',
+          border: '1px solid #ffc107',
+          borderRadius: '4px',
+          fontSize: '13px',
+          textAlign: 'center'
+        }}>
+          ⚠️ هذا المستند سري. التوزيع غير المصرح به محظور. يتم تسجيل ومراقبة وصولك.
+        </div>
+      </div>
+    </div>
+  );
 }
