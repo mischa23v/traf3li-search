@@ -13,6 +13,8 @@ export default async function handler(req, res) {
     q: query = '', 
     court, 
     judgmentFor,
+    mainTitle,
+    subTitle,
     dateFrom, 
     dateTo, 
     page = 1, 
@@ -58,6 +60,16 @@ export default async function handler(req, res) {
 
     if (judgmentFor) {
       and.push({ judgmentFor: { contains: judgmentFor, mode: 'insensitive' } });
+    }
+
+    // NEW: Main Title filter
+    if (mainTitle) {
+      and.push({ mainTitle: { contains: mainTitle, mode: 'insensitive' } });
+    }
+
+    // NEW: Sub Title filter
+    if (subTitle) {
+      and.push({ subTitle: { contains: subTitle, mode: 'insensitive' } });
     }
 
     // Date range filter
@@ -110,8 +122,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // Get aggregations for filters
-    const [courts, judgmentFors] = await Promise.all([
+    // Get aggregations for filters (including NEW mainTitles and subTitles)
+    const [courts, judgmentFors, mainTitles, subTitles] = await Promise.all([
       prisma.document.groupBy({
         by: ['court'],
         where: { court: { not: null } },
@@ -125,6 +137,21 @@ export default async function handler(req, res) {
         _count: { judgmentFor: true },
         orderBy: { _count: { judgmentFor: 'desc' } },
         take: 10
+      }),
+      prisma.document.groupBy({
+        by: ['mainTitle'],
+        where: { mainTitle: { not: null } },
+        _count: { mainTitle: true },
+        orderBy: { _count: { mainTitle: 'desc' } }
+      }),
+      prisma.document.groupBy({
+        by: ['mainTitle', 'subTitle'],
+        where: { 
+          mainTitle: { not: null },
+          subTitle: { not: null }
+        },
+        _count: { subTitle: true },
+        orderBy: { _count: { subTitle: 'desc' } }
       })
     ]);
 
@@ -133,7 +160,12 @@ export default async function handler(req, res) {
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / parseInt(limit)),
-      aggregations: { courts, judgmentFors }
+      aggregations: { 
+        courts, 
+        judgmentFors,
+        mainTitles,
+        subTitles
+      }
     });
 
   } catch (error) {
