@@ -36,24 +36,18 @@ model Document {
   extractedText String?
   redactedText  String?
 
-  // Metadata
-  title         String?
-  court         String?
-  judge         String?
-  caseNumber    String?
-  parties       String?
-  dateDecided   DateTime?
+  // NEW FIXED FIELDS
+  court         String?     // المحكمة
+  plaintiff     String?     // المدعي
+  judgmentFor   String?     // الحكم_لصالح
+  mainTitle     String?     // العنوان_الرئيسي
+  subTitle      String?     // العنوان_الفرعي
+  summary       String?     // ملخص (full summary)
+  caseDate      DateTime?   // تاريخ_الدعوى
+  
   keywords      String[]
-  summary       String?
-
-  // Arabic-specific fields
-  winningParty  String?     // الطرف_الفائز
-  victoryType   String?     // نوع_الفوز
-  field         String?     // المجال
-  outcome       String?     // النتيجة
   
   encrypted     Boolean     @default(false)
-
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
