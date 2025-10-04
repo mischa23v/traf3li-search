@@ -36,7 +36,7 @@ export default function DocView() {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px' }}>
+      <div style={{ textAlign: 'center', padding: '40px', direction: 'rtl' }}>
         جاري التحميل...
       </div>
     );
@@ -47,7 +47,7 @@ export default function DocView() {
   return (
     <div 
       onContextMenu={(e) => e.preventDefault()} 
-      style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+      style={{ userSelect: 'none', WebkitUserSelect: 'none', direction: 'rtl' }}
     >
       {/* Watermark overlay */}
       <div style={{
@@ -69,8 +69,7 @@ export default function DocView() {
         <div style={{ 
           borderBottom: '2px solid #333', 
           paddingBottom: '16px', 
-          marginBottom: '24px',
-          direction: 'rtl'
+          marginBottom: '24px'
         }}>
           <button 
             onClick={() => router.push('/')}
@@ -87,7 +86,14 @@ export default function DocView() {
             ← العودة للبحث
           </button>
 
-          <h2 style={{ margin: '8px 0' }}>{metadata?.title || 'عارض المستندات'}</h2>
+          <h2 style={{ margin: '8px 0' }}>
+            {metadata?.mainTitle || 'عارض المستندات'}
+          </h2>
+          {metadata?.subTitle && (
+            <h3 style={{ margin: '4px 0', fontSize: '16px', color: '#666' }}>
+              {metadata.subTitle}
+            </h3>
+          )}
           
           {metadata && (
             <div style={{ 
@@ -97,13 +103,16 @@ export default function DocView() {
               lineHeight: 1.8
             }}>
               {metadata.court && <div>المحكمة: {metadata.court}</div>}
-              {metadata.caseNumber && <div>رقم القضية: {metadata.caseNumber}</div>}
-              {metadata.dateDecided && (
-                <div>التاريخ: {new Date(metadata.dateDecided).toLocaleDateString('ar-SA')}</div>
+              {metadata.plaintiff && <div>المدعي: {metadata.plaintiff}</div>}
+              {metadata.judgmentFor && <div>الحكم لصالح: {metadata.judgmentFor}</div>}
+              {metadata.caseDate && (
+                <div>تاريخ الدعوى: {new Date(metadata.caseDate).toLocaleDateString('ar-SA')}</div>
               )}
-              {metadata.winningParty && <div>الطرف الفائز: {metadata.winningParty}</div>}
-              {metadata.victoryType && <div>نوع الفوز: {metadata.victoryType}</div>}
-              {metadata.field && <div>المجال: {metadata.field}</div>}
+              {metadata.summary && (
+                <div style={{ marginTop: '8px', fontStyle: 'italic' }}>
+                  <strong>ملخص:</strong> {metadata.summary}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -128,7 +137,6 @@ export default function DocView() {
           border: '1px solid #ffc107',
           borderRadius: '4px',
           fontSize: '13px',
-          direction: 'rtl',
           textAlign: 'center'
         }}>
           ⚠️ هذا المستند سري. التوزيع غير المصرح به محظور. يتم تسجيل ومراقبة وصولك.
