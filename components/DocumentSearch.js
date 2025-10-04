@@ -18,6 +18,8 @@ export default function DocumentSearch() {
   const [filters, setFilters] = useState({ 
     court: '', 
     judgmentFor: '',
+    mainTitle: '',
+    subTitle: '',
     dateFrom: '', 
     dateTo: '' 
   });
@@ -55,6 +57,11 @@ export default function DocumentSearch() {
       performSearch(1);
     }
   }, [debounced, filters, session]);
+
+  // Filter subtitles based on selected mainTitle
+  const filteredSubTitles = filters.mainTitle && aggregations.subTitles
+    ? aggregations.subTitles.filter(s => s.mainTitle === filters.mainTitle)
+    : aggregations.subTitles || [];
 
   if (!session?.user?.authorized) {
     return (
@@ -132,35 +139,83 @@ export default function DocumentSearch() {
           ))}
         </select>
 
-        <input
-          type="date"
-          value={filters.dateFrom}
-          onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-          placeholder="من تاريخ"
+        {/* NEW: Main Title Filter */}
+        <select
+          value={filters.mainTitle}
+          onChange={(e) => {
+            setFilters({ ...filters, mainTitle: e.target.value, subTitle: '' });
+          }}
           style={{ 
             padding: '8px', 
             borderRadius: '4px', 
             border: '1px solid #ddd',
             textAlign: 'right'
           }}
-        />
+        >
+          <option value="">الموضوع الرئيسي (الكل)</option>
+          {aggregations.mainTitles?.map(m => (
+            <option key={m.mainTitle} value={m.mainTitle}>
+              {m.mainTitle} ({m._count.mainTitle.toLocaleString('ar-SA')})
+            </option>
+          ))}
+        </select>
 
-        <input
-          type="date"
-          value={filters.dateTo}
-          onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-          placeholder="إلى تاريخ"
+        {/* NEW: Sub Title Filter (filtered based on mainTitle) */}
+        <select
+          value={filters.subTitle}
+          onChange={(e) => setFilters({ ...filters, subTitle: e.target.value })}
+          disabled={!filters.mainTitle}
           style={{ 
             padding: '8px', 
             borderRadius: '4px', 
             border: '1px solid #ddd',
-            textAlign: 'right'
+            textAlign: 'right',
+            background: !filters.mainTitle ? '#f0f0f0' : 'white',
+            cursor: !filters.mainTitle ? 'not-allowed' : 'pointer'
           }}
-        />
+        >
+          <option value="">الموضوع الفرعي (الكل)</option>
+          {filteredSubTitles.map(s => (
+            <option key={s.subTitle} value={s.subTitle}>
+              {s.subTitle} ({s._count.subTitle.toLocaleString('ar-SA')})
+            </option>
+          ))}
+        </select>
+
+        {/* Date Range with Labels */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <label style={{ fontSize: '12px', color: '#666' }}>من تاريخ:</label>
+          <input
+            type="date"
+            value={filters.dateFrom}
+            onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+            style={{ 
+              padding: '8px', 
+              borderRadius: '4px', 
+              border: '1px solid #ddd',
+              textAlign: 'right'
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <label style={{ fontSize: '12px', color: '#666' }}>إلى تاريخ:</label>
+          <input
+            type="date"
+            value={filters.dateTo}
+            onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+            style={{ 
+              padding: '8px', 
+              borderRadius: '4px', 
+              border: '1px solid #ddd',
+              textAlign: 'right'
+            }}
+          />
+        </div>
 
         <button
           onClick={() => {
-            setFilters({ court: '', judgmentFor: '', dateFrom: '', dateTo: '' });
+            setFilters({ court: '', judgmentFor: '', mainTitle: '', subTitle: '', dateFrom: '', dateTo: '' });
             setQuery('');
           }}
           style={{
