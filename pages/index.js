@@ -37,10 +37,6 @@ export default function Home() {
     );
   }
 
-  // Extract user ID from email (before @)
-  const userId = session.user.email?.split('@')[0] || session.user.email;
-  const userRole = session.user.role === 'ADMIN' ? 'مسؤول' : 'مستخدم';
-
   return (
     <div style={{ direction: 'rtl' }}>
       <div style={{ 
@@ -57,7 +53,7 @@ export default function Home() {
         }}>
           <h1 style={{ margin: 0 }}>نظام البحث القانوني</h1>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <span>{userId} ({userRole})</span>
+            <span>{session.user.email} ({session.user.role === 'ADMIN' ? 'مسؤول' : 'مستخدم'})</span>
             {session.user.role === 'ADMIN' && (
               <Link href="/admin/upload">
                 <button style={{
