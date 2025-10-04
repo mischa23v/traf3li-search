@@ -419,8 +419,12 @@ export default function Home() {
     );
   }
 
+  // Extract user ID from email (before @)
+  const userId = session.user.email?.split('@')[0] || session.user.email;
+  const userRole = session.user.role === 'ADMIN' ? 'مسؤول' : 'مستخدم';
+
   return (
-    <div>
+    <div style={{ direction: 'rtl' }}>
       <div style={{ 
         padding: '20px', 
         borderBottom: '1px solid #eee',
@@ -435,6 +439,7 @@ export default function Home() {
         }}>
           <h1 style={{ margin: 0 }}>نظام البحث القانوني</h1>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <span>{userId} ({userRole})</span>
             {session.user.role === 'ADMIN' && (
               <Link href="/admin/upload">
                 <button style={{
@@ -445,11 +450,10 @@ export default function Home() {
                   borderRadius: '4px',
                   cursor: 'pointer'
                 }}>
-                  Upload Document
+                  رفع مستند
                 </button>
               </Link>
             )}
-            <span>{session.user.email} ({session.user.role})</span>
             <button 
               onClick={() => signOut()}
               style={{
@@ -461,7 +465,7 @@ export default function Home() {
                 cursor: 'pointer'
               }}
             >
-              Sign out
+              تسجيل الخروج
             </button>
           </div>
         </div>
