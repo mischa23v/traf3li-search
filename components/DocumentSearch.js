@@ -17,8 +17,7 @@ export default function DocumentSearch() {
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState({ 
     court: '', 
-    winningParty: '',
-    field: '',
+    judgmentFor: '',
     dateFrom: '', 
     dateTo: '' 
   });
@@ -59,7 +58,7 @@ export default function DocumentSearch() {
 
   if (!session?.user?.authorized) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px', direction: 'rtl' }}>
+      <div style={{ textAlign: 'center', padding: '40px' }}>
         <h3>البحث في الأحكام القضائية</h3>
         <p>يرجى تسجيل الدخول للبحث في المستندات</p>
       </div>
@@ -67,7 +66,7 @@ export default function DocumentSearch() {
   }
 
   return (
-    <div className="document-search" style={{ direction: 'rtl' }}>
+    <div className="document-search">
       <div style={{ marginBottom: '24px' }}>
         <h2 style={{ marginBottom: '8px' }}>البحث في الأحكام القانونية</h2>
         <p style={{ color: '#666' }}>ابحث في {total} حكم قضائي</p>
@@ -85,8 +84,7 @@ export default function DocumentSearch() {
             fontSize: '16px',
             border: '2px solid #ddd',
             borderRadius: '4px',
-            direction: 'rtl',
-            textAlign: 'right'
+            direction: 'rtl'
           }}
         />
       </div>
@@ -96,8 +94,7 @@ export default function DocumentSearch() {
         display: 'grid', 
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
         gap: '12px',
-        marginBottom: '24px',
-        direction: 'rtl'
+        marginBottom: '24px'
       }}>
         <select
           value={filters.court}
@@ -106,8 +103,7 @@ export default function DocumentSearch() {
             padding: '8px', 
             borderRadius: '4px', 
             border: '1px solid #ddd',
-            direction: 'rtl',
-            textAlign: 'right'
+            direction: 'rtl'
           }}
         >
           <option value="">جميع المحاكم</option>
@@ -119,39 +115,19 @@ export default function DocumentSearch() {
         </select>
 
         <select
-          value={filters.winningParty}
-          onChange={(e) => setFilters({ ...filters, winningParty: e.target.value })}
+          value={filters.judgmentFor}
+          onChange={(e) => setFilters({ ...filters, judgmentFor: e.target.value })}
           style={{ 
             padding: '8px', 
             borderRadius: '4px', 
             border: '1px solid #ddd',
-            direction: 'rtl',
-            textAlign: 'right'
+            direction: 'rtl'
           }}
         >
-          <option value="">جميع الأطراف</option>
-          {aggregations.winningParties?.map(w => (
-            <option key={w.winningParty} value={w.winningParty}>
-              {w.winningParty} ({w._count.winningParty})
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={filters.field}
-          onChange={(e) => setFilters({ ...filters, field: e.target.value })}
-          style={{ 
-            padding: '8px', 
-            borderRadius: '4px', 
-            border: '1px solid #ddd',
-            direction: 'rtl',
-            textAlign: 'right'
-          }}
-        >
-          <option value="">جميع المجالات</option>
-          {aggregations.fields?.map(f => (
-            <option key={f.field} value={f.field}>
-              {f.field} ({f._count.field})
+          <option value="">الحكم لصالح (الكل)</option>
+          {aggregations.judgmentFors?.map(j => (
+            <option key={j.judgmentFor} value={j.judgmentFor}>
+              {j.judgmentFor} ({j._count.judgmentFor})
             </option>
           ))}
         </select>
@@ -184,7 +160,7 @@ export default function DocumentSearch() {
 
         <button
           onClick={() => {
-            setFilters({ court: '', winningParty: '', field: '', dateFrom: '', dateTo: '' });
+            setFilters({ court: '', judgmentFor: '', dateFrom: '', dateTo: '' });
             setQuery('');
           }}
           style={{
@@ -217,8 +193,7 @@ export default function DocumentSearch() {
                     borderRadius: '8px',
                     padding: '16px',
                     background: 'white',
-                    direction: 'rtl',
-                    textAlign: 'right'
+                    direction: 'rtl'
                   }}
                 >
                   <div style={{ 
@@ -227,12 +202,23 @@ export default function DocumentSearch() {
                     marginBottom: '12px'
                   }}>
                     <strong style={{ fontSize: '18px' }}>
-                      {doc.title || doc.originalName}
+                      {doc.mainTitle || doc.originalName}
                     </strong>
                     <span style={{ color: '#666', fontSize: '14px' }}>
                       {(doc.fileSize / 1024).toFixed(1)} كيلوبايت
                     </span>
                   </div>
+
+                  {doc.subTitle && (
+                    <div style={{ 
+                      fontSize: '15px', 
+                      color: '#555',
+                      marginBottom: '12px',
+                      fontWeight: '500'
+                    }}>
+                      {doc.subTitle}
+                    </div>
+                  )}
 
                   <div style={{ 
                     fontSize: '14px', 
@@ -241,10 +227,11 @@ export default function DocumentSearch() {
                     lineHeight: 1.6
                   }}>
                     {doc.court && <div>المحكمة: {doc.court}</div>}
-                    {doc.caseNumber && <div>رقم القضية: {doc.caseNumber}</div>}
-                    {doc.winningParty && <div>الطرف الفائز: {doc.winningParty}</div>}
-                    {doc.victoryType && <div>نوع الفوز: {doc.victoryType}</div>}
-                    {doc.field && <div>المجال: {doc.field}</div>}
+                    {doc.plaintiff && <div>المدعي: {doc.plaintiff}</div>}
+                    {doc.judgmentFor && <div>الحكم لصالح: {doc.judgmentFor}</div>}
+                    {doc.caseDate && (
+                      <div>تاريخ الدعوى: {new Date(doc.caseDate).toLocaleDateString('ar-SA')}</div>
+                    )}
                   </div>
 
                   {doc.summary && (
@@ -252,10 +239,9 @@ export default function DocumentSearch() {
                       color: '#333', 
                       fontSize: '14px',
                       marginBottom: '12px',
-                      lineHeight: 1.6,
-                      textAlign: 'right'
+                      lineHeight: 1.6
                     }}>
-                      {doc.summary.slice(0, 300)}...
+                      {doc.summary}
                     </p>
                   )}
 
@@ -304,26 +290,8 @@ export default function DocumentSearch() {
                 justifyContent: 'center', 
                 alignItems: 'center',
                 gap: '16px',
-                marginTop: '24px',
-                direction: 'rtl'
+                marginTop: '24px'
               }}>
-                <button
-                  disabled={page >= Math.ceil(total / 10)}
-                  onClick={() => performSearch(page + 1)}
-                  style={{
-                    padding: '8px 16px',
-                    background: page >= Math.ceil(total / 10) ? '#ccc' : '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: page >= Math.ceil(total / 10) ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  التالي ←
-                </button>
-
-                <span>صفحة {page} من {Math.ceil(total / 10)}</span>
-
                 <button
                   disabled={page === 1}
                   onClick={() => performSearch(page - 1)}
@@ -336,7 +304,24 @@ export default function DocumentSearch() {
                     cursor: page === 1 ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  → السابق
+                  ← السابق
+                </button>
+
+                <span>صفحة {page} من {Math.ceil(total / 10)}</span>
+
+                <button
+                  disabled={page >= Math.ceil(total / 10)}
+                  onClick={() => performSearch(page + 1)}
+                  style={{
+                    padding: '8px 16px',
+                    background: page >= Math.ceil(total / 10) ? '#ccc' : '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: page >= Math.ceil(total / 10) ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  التالي →
                 </button>
               </div>
             )}
