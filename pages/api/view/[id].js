@@ -30,15 +30,14 @@ export default async function handler(req, res) {
         fileContent: true,
         encrypted: true,
         redactedText: true,
-        title: true,
+        mainTitle: true,
+        subTitle: true,
         court: true,
-        caseNumber: true,
-        dateDecided: true,
+        plaintiff: true,
+        caseDate: true,
         accessLevel: true,
-        winningParty: true,
-        victoryType: true,
-        field: true,
-        outcome: true
+        judgmentFor: true,
+        summary: true
       }
     });
 
@@ -67,8 +66,11 @@ export default async function handler(req, res) {
       text = doc.redactedText || 'Content not available';
     }
 
+    // REMOVE TAGS SECTION FROM DISPLAY
+    text = text.replace(/---TAGS_START---[\s\S]*?---TAGS_END---\s*/g, '');
+
     // Add watermark
-    const watermark = `\n\n--- Viewed by ${session.user.email} on ${new Date().toISOString()} ---\n\n`;
+    const watermark = `\n\n--- تم الاطلاع بواسطة ${session.user.email} في ${new Date().toISOString()} ---\n\n`;
     text = watermark + text + watermark;
 
     // Log access
@@ -85,14 +87,13 @@ export default async function handler(req, res) {
     res.json({
       text,
       metadata: {
-        title: doc.title,
+        mainTitle: doc.mainTitle,
+        subTitle: doc.subTitle,
         court: doc.court,
-        caseNumber: doc.caseNumber,
-        dateDecided: doc.dateDecided,
-        winningParty: doc.winningParty,
-        victoryType: doc.victoryType,
-        field: doc.field,
-        outcome: doc.outcome
+        plaintiff: doc.plaintiff,
+        caseDate: doc.caseDate,
+        judgmentFor: doc.judgmentFor,
+        summary: doc.summary
       }
     });
 
