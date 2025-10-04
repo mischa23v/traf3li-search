@@ -59,9 +59,15 @@ export default function DocumentSearch() {
   }, [debounced, filters, session]);
 
   // Filter subtitles based on selected mainTitle
-  const filteredSubTitles = filters.mainTitle && aggregations.subTitles
-    ? aggregations.subTitles.filter(s => s.mainTitle === filters.mainTitle)
-    : aggregations.subTitles || [];
+  const getFilteredSubTitles = () => {
+    if (!filters.mainTitle || !aggregations.subTitles) {
+      return [];
+    }
+    
+    return aggregations.subTitles.filter(s => s.mainTitle === filters.mainTitle);
+  };
+
+  const filteredSubTitles = getFilteredSubTitles();
 
   if (!session?.user?.authorized) {
     return (
@@ -96,12 +102,12 @@ export default function DocumentSearch() {
         />
       </div>
 
-      {/* Filters */}
+      {/* Filters - Row 1 */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gridTemplateColumns: 'repeat(2, 1fr)',
         gap: '12px',
-        marginBottom: '24px'
+        marginBottom: '12px'
       }}>
         <select
           value={filters.court}
@@ -138,8 +144,15 @@ export default function DocumentSearch() {
             </option>
           ))}
         </select>
+      </div>
 
-        {/* NEW: Main Title Filter */}
+      {/* Filters - Row 2 */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '12px',
+        marginBottom: '12px'
+      }}>
         <select
           value={filters.mainTitle}
           onChange={(e) => {
@@ -160,7 +173,6 @@ export default function DocumentSearch() {
           ))}
         </select>
 
-        {/* NEW: Sub Title Filter (filtered based on mainTitle) */}
         <select
           value={filters.subTitle}
           onChange={(e) => setFilters({ ...filters, subTitle: e.target.value })}
@@ -181,8 +193,15 @@ export default function DocumentSearch() {
             </option>
           ))}
         </select>
+      </div>
 
-        {/* Date Range with Labels */}
+      {/* Filters - Row 3: Dates and Clear Button */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: '1fr 1fr 200px',
+        gap: '12px',
+        marginBottom: '24px'
+      }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <label style={{ fontSize: '12px', color: '#666' }}>من تاريخ:</label>
           <input
@@ -224,7 +243,8 @@ export default function DocumentSearch() {
             color: 'white',
             border: 'none',
             borderRadius: '4px',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            marginTop: '20px'
           }}
         >
           مسح الفلاتر
