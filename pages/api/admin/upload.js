@@ -24,9 +24,9 @@ function encryptBuffer(buffer) {
 }
 
 function redactText(text) {
-  return text
-    .replace(/\b\d{10,}\b/g, '[REDACTED_ID]')
-    .replace(/\b\d{3}-\d{3}-\d{4}\b/g, '[REDACTED_PHONE]');
+  // Remove TAGS section from redacted text
+  return text.replace(/---TAGS_START---[\s\S]*?---TAGS_END---\s*/g, '');
+  // NO NUMBER REDACTION - numbers are kept as-is
 }
 
 export default async function handler(req, res) {
@@ -85,18 +85,16 @@ export default async function handler(req, res) {
         extractedText: text,
         redactedText: redacted,
         encrypted: true,
-        title: metadata.title,
+        
+        // New metadata fields
         court: metadata.court,
-        judge: metadata.judge,
-        caseNumber: metadata.caseNumber,
-        parties: metadata.parties,
-        dateDecided: metadata.dateDecided,
-        keywords: metadata.keywords,
+        plaintiff: metadata.plaintiff,
+        judgmentFor: metadata.judgmentFor,
+        mainTitle: metadata.mainTitle,
+        subTitle: metadata.subTitle,
         summary: metadata.summary,
-        winningParty: metadata.winningParty,
-        victoryType: metadata.victoryType,
-        field: metadata.field,
-        outcome: metadata.outcome,
+        caseDate: metadata.caseDate,
+        keywords: metadata.keywords,
       },
     });
 
