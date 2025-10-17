@@ -1,12 +1,21 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
 import { prisma } from '../../lib/prisma';
+import { logError } from '../../lib/logger';
 
 export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   const session = await getServerSession(req, res, authOptions);
   
   if (!session?.user) {
     return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  if (!session.user.authorized) {
+    return res.status(403).json({ error: 'Account not authorized' });
   }
 
   const { 
@@ -22,7 +31,7 @@ export default async function handler(req, res) {
   } = req.query;
 
   try {
-    // Access control
+    // Access control based on role
     const accessFilters = session.user.role === 'ADMIN'
       ? [
           { accessLevel: 'PUBLIC' }, 
@@ -38,51 +47,58 @@ export default async function handler(req, res) {
 
     // Text search across multiple fields
     if (query && query.trim()) {
+      const searchTerms = query.trim();
       and.push({
         OR: [
-          { mainTitle: { contains: query, mode: 'insensitive' } },
-          { subTitle: { contains: query, mode: 'insensitive' } },
-          { extractedText: { contains: query, mode: 'insensitive' } },
-          { redactedText: { contains: query, mode: 'insensitive' } },
-          { plaintiff: { contains: query, mode: 'insensitive' } },
-          { court: { contains: query, mode: 'insensitive' } },
-          { summary: { contains: query, mode: 'insensitive' } },
-          { judgmentFor: { contains: query, mode: 'insensitive' } },
-          { keywords: { has: query.toLowerCase() } }
+          { mainTitle: { contains: searchTerms, mode: 'insensitive' } },
+          { subTitle: { contains: searchTerms, mode: 'insensitive' } },
+          { extractedText: { contains: searchTerms, mode: 'insensitive' } },
+          { redactedText: { contains: searchTerms, mode: 'insensitive' } },
+          { plaintiff: { contains: searchTerms, mode: 'insensitive' } },
+          { court: { contains: searchTerms, mode: 'insensitive' } },
+          { summary: { contains: searchTerms, mode: 'insensitive' } },
+          { judgmentFor: { contains: searchTerms, mode: 'insensitive' } },
+          { keywords: { has: searchTerms.toLowerCase() } }
         ]
       });
     }
 
     // Filters
     if (court) {
-      and.push({ court: { contains: court, mode: 'insensitive' } });
+      and.push({ court: { equals: court } });
     }
 
     if (judgmentFor) {
-      and.push({ judgmentFor: { contains: judgmentFor, mode: 'insensitive' } });
+      and.push({ judgmentFor: { equals: judgmentFor } });
     }
 
-    // NEW: Main Title filter
+    // Main Title filter
     if (mainTitle) {
-      and.push({ mainTitle: { contains: mainTitle, mode: 'insensitive' } });
+      and.push({ mainTitle: { equals: mainTitle } });
     }
 
-    // NEW: Sub Title filter
+    // Sub Title filter
     if (subTitle) {
-      and.push({ subTitle: { contains: subTitle, mode: 'insensitive' } });
+      and.push({ subTitle: { equals: subTitle } });
     }
 
     // Date range filter
     if (dateFrom || dateTo) {
       const dateFilter = {};
-      if (dateFrom) dateFilter.gte = new Date(dateFrom);
-      if (dateTo) dateFilter.lte = new Date(dateTo);
+      if (dateFrom) {
+        dateFilter.gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        const endDate = new Date(dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        dateFilter.lte = endDate;
+      }
       and.push({ caseDate: dateFilter });
     }
 
     const where = { AND: and };
 
-    // Execute search
+    // Execute search with parallel queries for performance
     const [documents, total] = await Promise.all([
       prisma.document.findMany({
         where,
@@ -110,52 +126,53 @@ export default async function handler(req, res) {
       prisma.document.count({ where })
     ]);
 
-    // Log search
+    // Log search only if there's a query
     if (query && query.trim()) {
       await prisma.searchLog.create({
         data: {
           userId: session.user.email,
-          query,
+          query: query.trim(),
           action: 'SEARCH',
           results: total
         }
-      });
+      }).catch(err => logError('SEARCH_LOG', err, session.user.email));
     }
 
-    // Get aggregations for filters (including NEW mainTitles and subTitles)
-    const [courts, judgmentFors, mainTitles, subTitles] = await Promise.all([
+    // Get aggregations for filters
+    const [courts, judgmentFors, mainTitles] = await Promise.all([
       prisma.document.groupBy({
         by: ['court'],
-        where: { court: { not: null } },
+        where: { 
+          ...where,
+          court: { not: null } 
+        },
         _count: { court: true },
         orderBy: { _count: { court: 'desc' } },
-        take: 10
+        take: 20
       }),
       prisma.document.groupBy({
         by: ['judgmentFor'],
-        where: { judgmentFor: { not: null } },
+        where: { 
+          ...where,
+          judgmentFor: { not: null } 
+        },
         _count: { judgmentFor: true },
         orderBy: { _count: { judgmentFor: 'desc' } },
-        take: 10
+        take: 20
       }),
       prisma.document.groupBy({
         by: ['mainTitle'],
-        where: { mainTitle: { not: null } },
-        _count: { mainTitle: true },
-        orderBy: { _count: { mainTitle: 'desc' } }
-      }),
-      prisma.document.groupBy({
-        by: ['mainTitle', 'subTitle'],
         where: { 
-          mainTitle: { not: null },
-          subTitle: { not: null }
+          ...where,
+          mainTitle: { not: null } 
         },
-        _count: { subTitle: true },
-        orderBy: { _count: { subTitle: 'desc' } }
+        _count: { mainTitle: true },
+        orderBy: { _count: { mainTitle: 'desc' } },
+        take: 10
       })
     ]);
 
-    res.json({
+    res.status(200).json({
       documents,
       total,
       page: parseInt(page),
@@ -163,15 +180,14 @@ export default async function handler(req, res) {
       aggregations: { 
         courts, 
         judgmentFors,
-        mainTitles,
-        subTitles
+        mainTitles
       }
     });
 
   } catch (error) {
-    console.error('Search error:', error);
+    logError('SEARCH_API', error, session.user.email);
     res.status(500).json({ 
-      error: 'Search failed: ' + (error.message || error) 
+      error: 'حدث خطأ أثناء البحث. يرجى المحاولة مرة أخرى'
     });
   }
 }
