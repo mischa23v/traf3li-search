@@ -2,6 +2,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { getStatusArabic } from '../../lib/helpers';
 
 export default function LawyerClients() {
   const { data: session, status } = useSession();
@@ -305,16 +306,4 @@ export default function LawyerClients() {
       </div>
     </div>
   );
-}
-
-function getStatusArabic(status) {
-  const statuses = {
-    'PENDING': 'قيد الانتظار',
-    'ACTIVE': 'نشطة',
-    'SETTLED': 'تسوية',
-    'JUDGMENT': 'حكم',
-    'APPEAL': 'استئناف',
-    'CLOSED': 'منتهية'
-  };
-  return statuses[status] || status;
 }
