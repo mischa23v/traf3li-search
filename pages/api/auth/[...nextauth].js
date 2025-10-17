@@ -49,10 +49,14 @@ export const authOptions = {
     },
     
     async session({ session, token }) {
+      console.log('🔍 Session callback - Email:', token?.email);
+      
       if (token?.email) {
         const prisma = new PrismaClient();
         
         try {
+          console.log('📊 Attempting database lookup...');
+          
           const dbUser = await prisma.user.findUnique({
             where: { email: token.email },
             include: {
@@ -60,6 +64,9 @@ export const authOptions = {
               client: true
             }
           });
+          
+          console.log('✅ Database result:', dbUser ? 'FOUND' : 'NOT FOUND');
+          console.log('📝 User data:', JSON.stringify(dbUser, null, 2));
           
           if (dbUser) {
             // User exists in database
@@ -84,10 +91,12 @@ export const authOptions = {
             // Check if access has expired
             if (new Date() > new Date(dbUser.accessEnd)) {
               session.user.authorized = false;
+              console.log('⚠️ Access expired');
               logInfo('AUTH_SESSION', 'User access expired', { email: dbUser.email });
             }
           } else {
             // User not in database - unauthorized
+            console.log('❌ User not found in database');
             session.user.email = token.email;
             session.user.name = token.name;
             session.user.image = token.picture;
@@ -99,6 +108,7 @@ export const authOptions = {
             logInfo('AUTH_SESSION', 'User not authorized in database', { email: token.email });
           }
         } catch (error) {
+          console.error('💥 Database error:', error);
           logError('AUTH_SESSION', error, token.email);
           
           // Fallback for database errors
@@ -114,6 +124,7 @@ export const authOptions = {
         }
       }
       
+      console.log('🎯 Final session:', JSON.stringify(session.user, null, 2));
       return session;
     }
   },
