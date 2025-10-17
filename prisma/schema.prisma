@@ -18,8 +18,275 @@ model User {
   accessEnd    DateTime @default(dbgenerated("now() + interval '30 days'"))
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
+  
+  // Relations
+  lawyer       Lawyer?
+  client       Client?
+  
+  @@index([email])
+  @@index([role])
+  @@index([active])
   @@map("users")
+}
+
+model Lawyer {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Profile
+  bio               String?  @db.Text
+  specializations   String[]
+  yearsExperience   Int      @default(0)
+  rating            Float    @default(0)
+  totalCases        Int      @default(0)
+  successRate       Float    @default(0)
+  
+  // Office
+  officeName        String?
+  officeAddress     String?
+  licenseNumber     String   @unique
+  
+  // Settings
+  feesRange         String?
+  languages         String[]
+  acceptingCases    Boolean  @default(true)
+  
+  // Relations
+  cases             Case[]
+  reviews           LawyerReview[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([rating])
+  @@index([acceptingCases])
+  @@map("lawyers")
+}
+
+model Client {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Personal Info
+  fullName          String
+  nationalId        String   @unique
+  phone             String
+  email             String
+  address           String?
+  occupation        String?
+  
+  // Relations
+  cases             Case[]
+  invoices          Invoice[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([nationalId])
+  @@map("clients")
+}
+
+model Case {
+  id                String      @id @default(cuid())
+  caseNumber        String      @unique
+  
+  // Client
+  clientId          String
+  client            Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  // Lawyer
+  lawyerId          String?
+  lawyer            Lawyer?     @relation(fields: [lawyerId], references: [id], onDelete: SetNull)
+  
+  // Parties
+  plaintiffName     String
+  plaintiffAddress  String?
+  plaintiffPhone    String?
+  plaintiffEmail    String?
+  plaintiffId       String?     // National ID
+  
+  defendantName     String
+  defendantAddress  String?
+  defendantType     String      // Company or Individual
+  defendantCR       String?     // Commercial Registration
+  
+  // Case Details
+  caseType          CaseType
+  subCategory       String
+  court             String
+  courtType         CourtType
+  status            CaseStatus  @default(PENDING)
+  settlementStatus  SettlementStatus?
+  stage             CaseStage   @default(INTAKE)
+  
+  // Dates
+  issueDate         DateTime    // تاريخ رفع الدعوى
+  filingDate        DateTime?
+  nextHearing       DateTime?
+  nextHearingTime   String?
+  closedDate        DateTime?
+  
+  // Financial
+  claimAmount       Float?
+  settlementAmount  Float?
+  
+  // Content
+  description       String      @db.Text
+  
+  // Service Type
+  serviceType       ServiceType
+  
+  // Relations
+  hearings          Hearing[]
+  documents         CaseDocument[]
+  expenses          Expense[]
+  invoices          Invoice[]
+  notes             CaseNote[]
+  aiDocuments       AIDocument[]
+  
+  // Timestamps
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  @@index([clientId])
+  @@index([lawyerId])
+  @@index([caseType, subCategory])
+  @@index([nextHearing])
+  @@index([status])
+  @@index([courtType])
+  @@index([caseNumber])
+  @@index([stage])
+  
+  @@map("cases")
+}
+
+model Hearing {
+  id                String   @id @default(cuid())
+  caseId            String
+  case              Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  hearingDate       DateTime
+  hearingTime       String
+  court             String
+  judge             String?
+  outcome           String?  @db.Text
+  nextHearingDate   DateTime?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([caseId])
+  @@index([hearingDate])
+  @@map("hearings")
+}
+
+model CaseDocument {
+  id                String   @id @default(cuid())
+  caseId            String
+  case              Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  title             String
+  fileName          String
+  fileType          String
+  fileSize          Int
+  uploadedBy        String
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([caseId])
+  @@map("case_documents")
+}
+
+model Expense {
+  id                String   @id @default(cuid())
+  caseId            String
+  case              Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  description       String
+  amount            Float
+  expenseDate       DateTime
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([caseId])
+  @@map("expenses")
+}
+
+model Invoice {
+  id                String   @id @default(cuid())
+  caseId            String?
+  case              Case?    @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  clientId          String
+  client            Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  invoiceNumber     String   @unique
+  amount            Float
+  paid              Boolean  @default(false)
+  paidDate          DateTime?
+  dueDate           DateTime
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([caseId])
+  @@index([clientId])
+  @@index([invoiceNumber])
+  @@map("invoices")
+}
+
+model CaseNote {
+  id                String   @id @default(cuid())
+  caseId            String
+  case              Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  content           String   @db.Text
+  createdBy         String
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([caseId])
+  @@map("case_notes")
+}
+
+model LawyerReview {
+  id                String   @id @default(cuid())
+  lawyerId          String
+  lawyer            Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  clientId          String
+  caseId            String?
+  
+  rating            Int      // 1-5
+  comment           String?  @db.Text
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([lawyerId])
+  @@map("lawyer_reviews")
+}
+
+model AIDocument {
+  id                String   @id @default(cuid())
+  caseId            String
+  case              Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  documentType      AIDocType
+  content           String   @db.Text
+  version           Int      @default(1)
+  
+  generatedBy       String   // 'AI' or 'LAWYER'
+  reviewedBy        String?
+  approved          Boolean  @default(false)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([caseId])
+  @@index([documentType])
+  @@map("ai_documents")
 }
 
 model Document {
@@ -30,29 +297,40 @@ model Document {
   fileSize      Int
   uploadedBy    String
   accessLevel   AccessLevel @default(ADMIN_ONLY)
-
+  
   // File content stored in database
   fileContent   Bytes?
-  extractedText String?
-  redactedText  String?
-
-  // NEW FIXED FIELDS
-  court         String?     // المحكمة
-  plaintiff     String?     // المدعي
-  judgmentFor   String?     // الحكم_لصالح
-  mainTitle     String?     // العنوان_الرئيسي
-  subTitle      String?     // العنوان_الفرعي
-  summary       String?     // ملخص (full summary)
-  caseDate      DateTime?   // تاريخ_الدعوى
+  extractedText String?     @db.Text
+  redactedText  String?     @db.Text
+  
+  // Structured metadata fields
+  court         String?
+  plaintiff     String?
+  judgmentFor   String?
+  mainTitle     String?
+  subTitle      String?
+  summary       String?     @db.Text
+  caseDate      DateTime?
   
   keywords      String[]
   
   encrypted     Boolean     @default(false)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-
   searchLogs    SearchLog[]
-
+  
+  // Performance indexes for fast searching
+  @@index([court])
+  @@index([judgmentFor])
+  @@index([mainTitle])
+  @@index([subTitle])
+  @@index([caseDate])
+  @@index([createdAt])
+  @@index([uploadedBy])
+  @@index([accessLevel])
+  @@index([court, judgmentFor])
+  @@index([mainTitle, subTitle])
+  
   @@map("documents")
 }
 
@@ -64,19 +342,83 @@ model SearchLog {
   action     String
   results    Int?
   createdAt  DateTime @default(now())
-
-  document   Document? @relation(fields: [documentId], references: [id])
-
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  
   @@map("search_logs")
 }
 
 enum Role {
   USER
   ADMIN
+  LAWYER
+  CLIENT
 }
 
 enum AccessLevel {
   PUBLIC
   USER_ONLY
   ADMIN_ONLY
+}
+
+enum CaseType {
+  SALARY           // أجر
+  BONUS            // مكافأة
+  COMPENSATION     // تعويض
+  PROOF            // إثبات
+  OTHER            // أخرى
+}
+
+enum CourtType {
+  LABOR            // عمالية
+  COMMERCIAL       // تجارية
+  APPEAL           // استئناف
+  SUPREME          // عليا
+  FRIENDLY_SETTLEMENT // تسوية ودية
+}
+
+enum CaseStatus {
+  PENDING          // قيد الانتظار
+  ACTIVE           // نشطة
+  SETTLED          // تسوية
+  JUDGMENT         // صدر حكم
+  APPEAL           // استئناف
+  CLOSED           // منتهية
+}
+
+enum SettlementStatus {
+  FRIENDLY_SETTLEMENT    // تسوية ودية
+  IN_COURT              // في المحكمة
+  NEGOTIATING           // تفاوض
+}
+
+enum CaseStage {
+  INTAKE                 // استقبال
+  PREPARING              // إعداد
+  FILED                  // مرفوعة
+  SETTLEMENT_NEGOTIATION // تفاوض تسوية
+  SETTLED                // تسوية
+  FIRST_HEARING          // جلسة أولى
+  IN_PROGRESS            // قيد النظر
+  JUDGMENT               // حكم
+  APPEAL                 // استئناف
+  CLOSED                 // منتهية
+}
+
+enum ServiceType {
+  CONSULTATION           // استشارة فقط
+  LAWSUIT_WRITING       // كتابة صحيفة
+  DEFENSE_WRITING       // كتابة مذكرة دفاع
+  FULL_REPRESENTATION   // توكيل كامل
+}
+
+enum AIDocType {
+  LAWSUIT_PETITION      // صحيفة دعوى
+  DEFENSE_MEMO          // مذكرة دفاع
+  APPEAL                // استئناف
+  LEGAL_MEMO            // مذكرة قانونية
 }
