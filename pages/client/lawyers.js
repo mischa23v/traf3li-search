@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 
-export default function ClientLawyers() {
+export default function FindLawyer() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [lawyers, setLawyers] = useState([]);
@@ -11,33 +11,39 @@ export default function ClientLawyers() {
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     specialization: '',
-    minRating: '',
-    acceptingCases: 'true'
+    rating: '',
+    acceptingCases: true
   });
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     if (status === 'loading') return;
     
-    if (!session?.user) {
+    if (!session?.user?.isClient) {
       router.push('/');
       return;
     }
 
     fetchLawyers();
-  }, [session, status, filters, page]);
+  }, [session, status, filters]);
 
   async function fetchLawyers() {
     setLoading(true);
     setError(null);
     
     try {
-      const params = new URLSearchParams({ 
-        ...filters,
-        page, 
-        limit: 12 
-      });
+      const params = new URLSearchParams();
+      
+      if (filters.specialization) {
+        params.append('specialization', filters.specialization);
+      }
+      
+      if (filters.rating) {
+        params.append('rating', filters.rating);
+      }
+      
+      if (filters.acceptingCases) {
+        params.append('acceptingCases', 'true');
+      }
       
       const res = await fetch(`/api/lawyers?${params}`);
       
@@ -47,8 +53,8 @@ export default function ClientLawyers() {
       
       const data = await res.json();
       setLawyers(data.lawyers || []);
-      setTotal(data.total || 0);
     } catch (err) {
+      console.error('Error fetching lawyers:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -62,6 +68,10 @@ export default function ClientLawyers() {
         <p style={{ fontSize: '18px', color: '#666' }}>جاري التحميل...</p>
       </div>
     );
+  }
+
+  if (!session?.user?.isClient) {
+    return null;
   }
 
   return (
@@ -81,60 +91,45 @@ export default function ClientLawyers() {
           alignItems: 'center'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '24px' }}>👨‍⚖️</span>
-            <h1 style={{ margin: 0, fontSize: '20px' }}>البحث عن محامي</h1>
+            <span style={{ fontSize: '24px' }}>⚖️</span>
+            <h1 style={{ margin: 0, fontSize: '20px' }}>ابحث عن محامي</h1>
           </div>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Link href="/">
-              <button style={{
-                padding: '10px 20px',
-                background: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}>
-                🔍 البحث في الأحكام
-              </button>
-            </Link>
-            {session.user.isClient && (
-              <Link href="/client/cases">
-                <button style={{
-                  padding: '10px 20px',
-                  background: '#17a2b8',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}>
-                  📁 قضاياي
-                </button>
-              </Link>
-            )}
-          </div>
+          <Link href="/client/cases">
+            <button style={{
+              padding: '10px 20px',
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}>
+              📁 قضاياي
+            </button>
+          </Link>
         </div>
       </div>
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
         {/* Filters */}
-        <div style={{
+        <div style={{ 
           background: 'white',
           padding: '20px',
           borderRadius: '8px',
           marginBottom: '24px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         }}>
-          <h3 style={{ marginBottom: '16px' }}>تصفية النتائج</h3>
+          <h3 style={{ marginTop: 0, marginBottom: '16px' }}>تصفية النتائج</h3>
+          
           <div style={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
             gap: '16px'
           }}>
+            {/* Specialization Filter */}
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
-                التخصص:
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
+                التخصص
               </label>
               <select
                 value={filters.specialization}
@@ -142,62 +137,84 @@ export default function ClientLawyers() {
                 style={{
                   width: '100%',
                   padding: '10px',
+                  border: '1px solid #ddd',
                   borderRadius: '6px',
-                  border: '1px solid #ddd'
+                  fontSize: '14px',
+                  textAlign: 'right'
                 }}
               >
                 <option value="">جميع التخصصات</option>
                 <option value="قضايا عمالية">قضايا عمالية</option>
                 <option value="قضايا تجارية">قضايا تجارية</option>
                 <option value="قضايا أحوال شخصية">قضايا أحوال شخصية</option>
-                <option value="قضايا جنائية">قضايا جنائية</option>
                 <option value="قضايا إدارية">قضايا إدارية</option>
+                <option value="التحكيم التجاري">التحكيم التجاري</option>
               </select>
             </div>
 
+            {/* Rating Filter */}
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
-                الحد الأدنى للتقييم:
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
+                التقييم الأدنى
               </label>
               <select
-                value={filters.minRating}
-                onChange={(e) => setFilters({ ...filters, minRating: e.target.value })}
+                value={filters.rating}
+                onChange={(e) => setFilters({ ...filters, rating: e.target.value })}
                 style={{
                   width: '100%',
                   padding: '10px',
+                  border: '1px solid #ddd',
                   borderRadius: '6px',
-                  border: '1px solid #ddd'
+                  fontSize: '14px',
+                  textAlign: 'right'
                 }}
               >
                 <option value="">جميع التقييمات</option>
-                <option value="4.5">⭐ 4.5 فأعلى</option>
-                <option value="4.0">⭐ 4.0 فأعلى</option>
-                <option value="3.5">⭐ 3.5 فأعلى</option>
-                <option value="3.0">⭐ 3.0 فأعلى</option>
+                <option value="4.5">4.5+ ⭐</option>
+                <option value="4.0">4.0+ ⭐</option>
+                <option value="3.5">3.5+ ⭐</option>
+                <option value="3.0">3.0+ ⭐</option>
               </select>
             </div>
 
+            {/* Accepting Cases Filter */}
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
-                متاح لقبول القضايا:
+              <label style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                marginTop: '28px'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={filters.acceptingCases}
+                  onChange={(e) => setFilters({ ...filters, acceptingCases: e.target.checked })}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '14px' }}>يقبل قضايا جديدة فقط</span>
               </label>
-              <select
-                value={filters.acceptingCases}
-                onChange={(e) => setFilters({ ...filters, acceptingCases: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: '6px',
-                  border: '1px solid #ddd'
-                }}
-              >
-                <option value="">الكل</option>
-                <option value="true">متاح فقط</option>
-              </select>
             </div>
           </div>
+
+          <button
+            onClick={() => setFilters({ specialization: '', rating: '', acceptingCases: true })}
+            style={{
+              marginTop: '16px',
+              padding: '8px 16px',
+              background: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            مسح الفلاتر
+          </button>
         </div>
 
+        {/* Error Message */}
         {error && (
           <div style={{
             padding: '16px',
@@ -225,240 +242,200 @@ export default function ClientLawyers() {
             textAlign: 'center',
             color: '#666'
           }}>
-            <div style={{ fontSize: '64px', marginBottom: '16px' }}>👨‍⚖️</div>
-            <h3>لا يوجد محامون</h3>
-            <p>لم يتم العثور على محامين مطابقين لمعايير البحث</p>
+            <div style={{ fontSize: '64px', marginBottom: '16px' }}>⚖️</div>
+            <h3>لا يوجد محامون متاحون</h3>
+            <p>جرب تغيير معايير البحث</p>
           </div>
         ) : (
-          <>
-            <div style={{ marginBottom: '16px', color: '#666' }}>
-              وجدنا {total.toLocaleString('ar-SA')} محامي
-            </div>
-            
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-              gap: '24px'
-            }}>
-              {lawyers.map(lawyer => (
-                <div
-                  key={lawyer.id}
-                  style={{
-                    background: 'white',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    transition: 'transform 0.3s, box-shadow 0.3s',
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.15)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                  }}
-                  onClick={() => router.push(`/lawyers/${lawyer.id}`)}
-                >
-                  {/* Header with gradient */}
+          <div style={{ 
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+            gap: '20px'
+          }}>
+            {lawyers.map(lawyer => (
+              <div
+                key={lawyer.id}
+                style={{
+                  background: 'white',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  transition: 'transform 0.3s, box-shadow 0.3s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                }}
+              >
+                {/* Lawyer Header */}
+                <div style={{ display: 'flex', alignItems: 'start', marginBottom: '16px' }}>
                   <div style={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    padding: '24px',
-                    textAlign: 'center',
-                    color: 'white'
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    background: '#007bff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '24px',
+                    color: 'white',
+                    marginLeft: '16px',
+                    flexShrink: 0
                   }}>
-                    <div style={{
-                      width: '80px',
-                      height: '80px',
-                      borderRadius: '50%',
-                      background: 'white',
-                      margin: '0 auto 16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '36px',
-                      fontWeight: 'bold',
-                      color: '#667eea'
-                    }}>
-                      {lawyer.user.name?.charAt(0) || '👨‍⚖️'}
+                    {lawyer.image ? (
+                      <img src={lawyer.image} alt={lawyer.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                      '⚖️'
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: '18px' }}>{lawyer.name}</h3>
+                    <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
+                      {lawyer.officeName}
                     </div>
-                    <h3 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>
-                      {lawyer.user.name}
-                    </h3>
-                    <div style={{ fontSize: '14px', opacity: 0.9 }}>
-                      {lawyer.officeName || 'محامي مستقل'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ color: '#ffc107', fontSize: '16px' }}>⭐</span>
+                      <span style={{ fontWeight: 'bold' }}>{lawyer.rating.toFixed(1)}</span>
+                      <span style={{ color: '#666', fontSize: '14px' }}>({lawyer.totalReviews} تقييم)</span>
                     </div>
                   </div>
+                </div>
 
-                  {/* Body */}
-                  <div style={{ padding: '20px' }}>
-                    {/* Rating */}
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '16px',
-                      paddingBottom: '16px',
-                      borderBottom: '1px solid #eee'
-                    }}>
-                      <div>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffc107' }}>
-                          {'⭐'.repeat(Math.round(lawyer.rating))}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>
-                          {lawyer.rating.toFixed(1)} ({lawyer.reviews?.length || 0} تقييم)
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#007bff' }}>
-                          {lawyer.totalCases}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>
-                          قضية
-                        </div>
-                      </div>
+                {/* Bio */}
+                {lawyer.bio && (
+                  <p style={{ 
+                    fontSize: '14px', 
+                    color: '#555', 
+                    lineHeight: 1.6,
+                    marginBottom: '16px'
+                  }}>
+                    {lawyer.bio.substring(0, 120)}...
+                  </p>
+                )}
+
+                {/* Specializations */}
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px' }}>التخصصات:</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {lawyer.specializations.slice(0, 3).map((spec, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          padding: '4px 12px',
+                          background: '#e7f3ff',
+                          color: '#0066cc',
+                          borderRadius: '16px',
+                          fontSize: '12px'
+                        }}
+                      >
+                        {spec}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div style={{ 
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr 1fr',
+                  gap: '12px',
+                  marginBottom: '16px',
+                  padding: '12px',
+                  background: '#f8f9fa',
+                  borderRadius: '6px'
+                }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#007bff' }}>
+                      {lawyer.yearsExperience}
                     </div>
-
-                    {/* Experience */}
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
-                        <strong>الخبرة:</strong> {lawyer.yearsExperience} سنة
-                      </div>
-                      {lawyer.licenseNumber && (
-                        <div style={{ fontSize: '14px', color: '#666' }}>
-                          <strong>رقم الترخيص:</strong> {lawyer.licenseNumber}
-                        </div>
-                      )}
+                    <div style={{ fontSize: '11px', color: '#666' }}>سنوات خبرة</div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#28a745' }}>
+                      {lawyer.totalCases}
                     </div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>قضية</div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffc107' }}>
+                      {lawyer.successRate.toFixed(0)}%
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>نسبة النجاح</div>
+                  </div>
+                </div>
 
-                    {/* Specializations */}
-                    {lawyer.specializations?.length > 0 && (
-                      <div style={{ marginBottom: '16px' }}>
-                        <div style={{ fontSize: '12px', color: '#999', marginBottom: '8px' }}>
-                          التخصصات:
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                          {lawyer.specializations.slice(0, 3).map((spec, i) => (
-                            <span
-                              key={i}
-                              style={{
-                                padding: '4px 12px',
-                                background: '#e9ecef',
-                                borderRadius: '12px',
-                                fontSize: '12px'
-                              }}
-                            >
-                              {spec}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                {/* Fees */}
+                {lawyer.feesRange && (
+                  <div style={{ 
+                    fontSize: '14px',
+                    color: '#666',
+                    marginBottom: '16px',
+                    padding: '8px',
+                    background: '#f8f9fa',
+                    borderRadius: '4px'
+                  }}>
+                    💰 الأتعاب: {lawyer.feesRange}
+                  </div>
+                )}
 
-                    {/* Bio */}
-                    {lawyer.bio && (
-                      <p style={{ 
-                        fontSize: '14px', 
-                        color: '#666',
-                        lineHeight: 1.6,
-                        marginBottom: '16px',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}>
-                        {lawyer.bio}
-                      </p>
-                    )}
+                {/* Status Badge */}
+                <div style={{
+                  display: 'inline-block',
+                  padding: '6px 12px',
+                  background: lawyer.acceptingCases ? '#d4edda' : '#f8d7da',
+                  color: lawyer.acceptingCases ? '#155724' : '#721c24',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  marginBottom: '16px'
+                }}>
+                  {lawyer.acceptingCases ? '✓ يقبل قضايا جديدة' : '✗ لا يقبل قضايا حالياً'}
+                </div>
 
-                    {/* Status Badge */}
-                    <div style={{
-                      padding: '8px',
-                      background: lawyer.acceptingCases ? '#d4edda' : '#f8d7da',
-                      color: lawyer.acceptingCases ? '#155724' : '#721c24',
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => router.push(`/lawyer/profile/${lawyer.id}`)}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      background: '#007bff',
+                      color: 'white',
+                      border: 'none',
                       borderRadius: '6px',
-                      textAlign: 'center',
+                      cursor: 'pointer',
                       fontSize: '14px',
-                      fontWeight: 'bold',
-                      marginBottom: '12px'
-                    }}>
-                      {lawyer.acceptingCases ? '✓ متاح لقبول القضايا' : '✗ غير متاح حالياً'}
-                    </div>
-
-                    {/* Action Button */}
+                      fontWeight: '500'
+                    }}
+                  >
+                    عرض الملف الشخصي
+                  </button>
+                  {lawyer.acceptingCases && (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/lawyers/${lawyer.id}`);
-                      }}
+                      onClick={() => router.push(`/client/new-case?lawyerId=${lawyer.id}`)}
                       style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: '#007bff',
+                        flex: 1,
+                        padding: '10px',
+                        background: '#28a745',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',
                         cursor: 'pointer',
                         fontSize: '14px',
-                        fontWeight: 'bold',
-                        transition: 'background 0.3s'
+                        fontWeight: '500'
                       }}
-                      onMouseEnter={(e) => e.target.style.background = '#0056b3'}
-                      onMouseLeave={(e) => e.target.style.background = '#007bff'}
                     >
-                      عرض الملف الشخصي
+                      تعيين المحامي
                     </button>
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {total > 12 && (
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '16px',
-                marginTop: '32px'
-              }}>
-                <button
-                  disabled={page === 1}
-                  onClick={() => setPage(p => p - 1)}
-                  style={{
-                    padding: '10px 20px',
-                    background: page === 1 ? '#ccc' : '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: page === 1 ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  ← السابق
-                </button>
-
-                <span>
-                  صفحة {page} من {Math.ceil(total / 12)}
-                </span>
-
-                <button
-                  disabled={page >= Math.ceil(total / 12)}
-                  onClick={() => setPage(p => p + 1)}
-                  style={{
-                    padding: '10px 20px',
-                    background: page >= Math.ceil(total / 12) ? '#ccc' : '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: page >= Math.ceil(total / 12) ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  التالي →
-                </button>
               </div>
-            )}
-          </>
+            ))}
+          </div>
         )}
       </div>
     </div>
