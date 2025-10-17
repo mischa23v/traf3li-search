@@ -335,4 +335,14 @@ function getStatusArabic(status) {
   return statuses[status] || status;
 }
 
-function getStatus
+function getStatusColor(status) {
+  const colors = {
+    'PENDING': '#ffc107',
+    'ACTIVE': '#17a2b8',
+    'SETTLED': '#28a745',
+    'JUDGMENT': '#6f42c1',
+    'APPEAL': '#fd7e14',
+    'CLOSED': '#6c757d'
+  };
+  return colors[status] || '#6c757d';
+}
