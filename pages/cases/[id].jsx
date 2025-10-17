@@ -2,6 +2,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { getCaseTypeArabic, getStatusArabic, getStatusColor, getCourtTypeArabic, getAIDocTypeArabic } from '../../lib/helpers';
 
 export default function CaseDetail() {
   const { data: session, status } = useSession();
@@ -648,60 +649,4 @@ export default function CaseDetail() {
       </div>
     </div>
   );
-}
-
-function getCaseTypeArabic(type) {
-  const types = {
-    'SALARY': 'أجر',
-    'BONUS': 'مكافأة',
-    'COMPENSATION': 'تعويض',
-    'PROOF': 'إثبات',
-    'OTHER': 'أخرى'
-  };
-  return types[type] || type;
-}
-
-function getStatusArabic(status) {
-  const statuses = {
-    'PENDING': 'قيد الانتظار',
-    'ACTIVE': 'نشطة',
-    'SETTLED': 'تسوية',
-    'JUDGMENT': 'حكم',
-    'APPEAL': 'استئناف',
-    'CLOSED': 'منتهية'
-  };
-  return statuses[status] || status;
-}
-
-function getStatusColor(status) {
-  const colors = {
-    'PENDING': '#ffc107',
-    'ACTIVE': '#17a2b8',
-    'SETTLED': '#28a745',
-    'JUDGMENT': '#6f42c1',
-    'APPEAL': '#fd7e14',
-    'CLOSED': '#6c757d'
-  };
-  return colors[status] || '#6c757d';
-}
-
-function getCourtTypeArabic(type) {
-  const types = {
-    'LABOR': 'عمالية',
-    'COMMERCIAL': 'تجارية',
-    'APPEAL': 'استئناف',
-    'SUPREME': 'عليا',
-    'FRIENDLY_SETTLEMENT': 'تسوية ودية'
-  };
-  return types[type] || type;
-}
-
-function getAIDocTypeArabic(type) {
-  const types = {
-    'LAWSUIT_PETITION': 'صحيفة دعوى',
-    'DEFENSE_MEMO': 'مذكرة دفاع',
-    'APPEAL': 'استئناف',
-    'LEGAL_MEMO': 'مذكرة قانونية'
-  };
-  return types[type] || type;
 }
