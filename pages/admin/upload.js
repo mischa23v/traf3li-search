@@ -5,31 +5,38 @@ import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 
 export default function AdminUpload() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
 
-  if (!session) {
+  if (status === 'loading') {
     return (
       <div style={{ 
         textAlign: 'center',
         padding: '40px',
         direction: 'rtl'
       }}>
-        جاري التحميل...
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+        <p>جاري التحميل...</p>
       </div>
     );
   }
 
+  if (!session) {
+    router.push('/');
+    return null;
+  }
+
   if (session.user.role !== 'ADMIN') {
     return (
-      <div style={{ direction: 'rtl' }}>
+      <div style={{ direction: 'rtl', minHeight: '100vh', background: '#f5f5f5' }}>
         <div style={{ 
           padding: '20px', 
           borderBottom: '1px solid #eee',
-          background: '#f8f9fa'
+          background: 'white',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
         }}>
           <div style={{ 
             maxWidth: '1200px', 
@@ -38,18 +45,24 @@ export default function AdminUpload() {
             justifyContent: 'space-between',
             alignItems: 'center'
           }}>
-            <h1 style={{ margin: 0 }}>نظام البحث القانوني</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '24px' }}>⚖️</span>
+              <h1 style={{ margin: 0, fontSize: '20px' }}>نظام البحث القانوني</h1>
+            </div>
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-              <span>{session.user.email} ({session.user.role === 'ADMIN' ? 'مسؤول' : 'مستخدم'})</span>
+              <span style={{ fontSize: '14px' }}>
+                {session.user.email} ({session.user.role === 'ADMIN' ? 'مسؤول' : 'مستخدم'})
+              </span>
               <button 
                 onClick={() => signOut()}
                 style={{
-                  padding: '8px 16px',
+                  padding: '10px 20px',
                   background: '#dc3545',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
                 }}
               >
                 تسجيل الخروج
@@ -58,19 +71,20 @@ export default function AdminUpload() {
           </div>
         </div>
         
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <h3>يتطلب صلاحيات المسؤول</h3>
-          <p>يرجى تسجيل الدخول كمسؤول للوصول لهذه الصفحة</p>
+        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <div style={{ fontSize: '64px', marginBottom: '16px' }}>🚫</div>
+          <h3 style={{ marginBottom: '8px' }}>يتطلب صلاحيات المسؤول</h3>
+          <p style={{ color: '#666', marginBottom: '24px' }}>يرجى تسجيل الدخول كمسؤول للوصول لهذه الصفحة</p>
           <button 
             onClick={() => router.push('/')}
             style={{
-              padding: '8px 16px',
+              padding: '12px 24px',
               background: '#007bff',
               color: 'white',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: '6px',
               cursor: 'pointer',
-              marginTop: '16px'
+              fontSize: '16px'
             }}
           >
             العودة للبحث
@@ -85,6 +99,8 @@ export default function AdminUpload() {
     if (!file) return;
 
     setUploading(true);
+    setResult(null);
+    
     const formData = new FormData();
     formData.append('document', file);
     formData.append('accessLevel', 'USER_ONLY');
@@ -95,17 +111,18 @@ export default function AdminUpload() {
         body: formData
       });
       
+      const data = await res.json();
+      
       if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`فشل الرفع: ${res.status} - ${errorText}`);
+        throw new Error(data.error || `فشل الرفع: ${res.status}`);
       }
       
-      const data = await res.json();
       setResult(data);
       
       if (data.success) {
         setFile(null);
-        document.querySelector('input[type="file"]').value = '';
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) fileInput.value = '';
       }
     } catch (err) {
       console.error('Upload error:', err);
@@ -115,12 +132,13 @@ export default function AdminUpload() {
   }
 
   return (
-    <div style={{ direction: 'rtl' }}>
-      {/* Header - exact match */}
+    <div style={{ direction: 'rtl', minHeight: '100vh', background: '#f5f5f5' }}>
+      {/* Header */}
       <div style={{ 
         padding: '20px', 
         borderBottom: '1px solid #eee',
-        background: '#f8f9fa'
+        background: 'white',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
       }}>
         <div style={{ 
           maxWidth: '1200px', 
@@ -129,30 +147,40 @@ export default function AdminUpload() {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <h1 style={{ margin: 0 }}>نظام البحث القانوني</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '24px' }}>⚖️</span>
+            <h1 style={{ margin: 0, fontSize: '20px' }}>نظام البحث القانوني</h1>
+          </div>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <span>{session.user.email} ({session.user.role === 'ADMIN' ? 'مسؤول' : 'مستخدم'})</span>
+            <span style={{ fontSize: '14px' }}>
+              {session.user.email} (مسؤول)
+            </span>
             <Link href="/">
               <button style={{
-                padding: '8px 16px',
+                padding: '10px 20px',
                 background: '#007bff',
                 color: 'white',
                 border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}>
-                البحث في الأحكام
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                transition: 'background 0.3s'
+              }}
+              onMouseEnter={(e) => e.target.style.background = '#0056b3'}
+              onMouseLeave={(e) => e.target.style.background = '#007bff'}>
+                🔍 البحث في الأحكام
               </button>
             </Link>
             <button 
               onClick={() => signOut()}
               style={{
-                padding: '8px 16px',
+                padding: '10px 20px',
                 background: '#dc3545',
                 color: 'white',
                 border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px'
               }}
             >
               تسجيل الخروج
@@ -163,169 +191,245 @@ export default function AdminUpload() {
 
       {/* Main Content */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-        <div className="document-search">
-          <div style={{ marginBottom: '24px' }}>
-            <h2 style={{ marginBottom: '8px' }}>رفع مستند قانوني</h2>
-            <p style={{ color: '#666' }}>قم برفع الأحكام القضائية بصيغة txt</p>
+        <div style={{ background: 'white', borderRadius: '8px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+          <div style={{ marginBottom: '32px' }}>
+            <h2 style={{ marginBottom: '8px', fontSize: '24px' }}>📤 رفع مستند قانوني</h2>
+            <p style={{ color: '#666' }}>قم برفع الأحكام القضائية بصيغة txt (الحد الأقصى: 10 ميجابايت)</p>
           </div>
 
           {/* Upload Form */}
-          <div style={{ marginBottom: '16px' }}>
-            <form onSubmit={handleUpload}>
+          <form onSubmit={handleUpload}>
+            <div style={{ 
+              border: '2px dashed #ddd', 
+              borderRadius: '8px', 
+              padding: '40px',
+              textAlign: 'center',
+              marginBottom: '24px',
+              background: '#fafafa',
+              transition: 'all 0.3s'
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.currentTarget.style.borderColor = '#007bff';
+              e.currentTarget.style.background = '#f0f8ff';
+            }}
+            onDragLeave={(e) => {
+              e.currentTarget.style.borderColor = '#ddd';
+              e.currentTarget.style.background = '#fafafa';
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.style.borderColor = '#ddd';
+              e.currentTarget.style.background = '#fafafa';
+              const droppedFile = e.dataTransfer.files[0];
+              if (droppedFile && droppedFile.name.endsWith('.txt')) {
+                setFile(droppedFile);
+              }
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📄</div>
+              <p style={{ marginBottom: '16px', color: '#666' }}>اسحب الملف هنا أو انقر للاختيار</p>
               <input 
                 type="file" 
                 accept=".txt"
                 onChange={(e) => setFile(e.target.files[0])}
                 style={{
-                  width: '100%',
                   padding: '12px',
                   fontSize: '16px',
-                  border: '2px solid #ddd',
-                  borderRadius: '4px',
-                  marginBottom: '16px'
+                  borderRadius: '6px',
+                  cursor: 'pointer'
                 }}
               />
+            </div>
 
-              {file && (
-                <div style={{ 
-                  padding: '12px',
-                  background: 'white',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  marginBottom: '16px',
-                  fontSize: '14px'
-                }}>
-                  <strong>الملف المحدد:</strong> {file.name} ({(file.size / 1024).toFixed(1)} كيلوبايت)
+            {file && (
+              <div style={{ 
+                padding: '16px',
+                background: '#e7f3ff',
+                border: '1px solid #b3d9ff',
+                borderRadius: '8px',
+                marginBottom: '24px',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong>✓ الملف المحدد:</strong> {file.name}
+                  </div>
+                  <div style={{ color: '#666' }}>
+                    {(file.size / 1024).toFixed(1)} كيلوبايت
+                  </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              <button 
-                type="submit" 
-                disabled={uploading || !file}
-                style={{
-                  padding: '8px 16px',
-                  background: uploading || !file ? '#6c757d' : '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: uploading || !file ? 'not-allowed' : 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                {uploading ? 'جاري الرفع...' : 'رفع المستند'}
-              </button>
-            </form>
-          </div>
+            <button 
+              type="submit" 
+              disabled={uploading || !file}
+              style={{
+                padding: '14px 32px',
+                background: uploading || !file ? '#6c757d' : '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: uploading || !file ? 'not-allowed' : 'pointer',
+                fontSize: '16px',
+                fontWeight: '500',
+                width: '100%',
+                transition: 'background 0.3s'
+              }}
+            >
+              {uploading ? '⏳ جاري الرفع...' : '📤 رفع المستند'}
+            </button>
+          </form>
 
           {/* Results */}
           {result && (
-            <div>
-              <h3 style={{ marginBottom: '16px' }}>
-                {result.error ? 'حدث خطأ' : 'تم الرفع بنجاح'}
+            <div style={{ marginTop: '32px' }}>
+              <h3 style={{ marginBottom: '16px', fontSize: '20px' }}>
+                {result.error ? '❌ حدث خطأ' : '✅ تم الرفع بنجاح'}
               </h3>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div
-                  style={{
-                    border: '1px solid #ddd',
-                    borderRadius: '8px',
-                    padding: '16px',
-                    background: result.error ? '#f8d7da' : 'white',
-                    direction: 'rtl'
-                  }}
-                >
-                  {result.error ? (
-                    <div style={{ color: '#721c24' }}>
-                      <strong>خطأ:</strong> {result.error}
+              <div style={{
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                padding: '24px',
+                background: result.error ? '#fff5f5' : '#f0fff4',
+                borderColor: result.error ? '#feb2b2' : '#9ae6b4'
+              }}>
+                {result.error ? (
+                  <div style={{ color: '#c53030' }}>
+                    <strong>خطأ:</strong> {result.error}
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ 
+                      fontSize: '18px',
+                      color: '#22543d',
+                      marginBottom: '16px',
+                      fontWeight: 'bold'
+                    }}>
+                      ✓ تم رفع المستند بنجاح
                     </div>
-                  ) : (
-                    <>
+
+                    {result.extractedInfo && (
                       <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between',
-                        marginBottom: '12px'
+                        fontSize: '14px', 
+                        color: '#666', 
+                        marginBottom: '16px',
+                        lineHeight: 1.8,
+                        borderTop: '1px solid #e0e0e0',
+                        paddingTop: '16px'
                       }}>
-                        <strong style={{ fontSize: '18px', color: '#155724' }}>
-                          ✓ تم رفع المستند بنجاح
-                        </strong>
-                      </div>
-
-                      {result.extractedInfo && (
-                        <div style={{ 
-                          fontSize: '14px', 
-                          color: '#666', 
-                          marginBottom: '12px',
-                          lineHeight: 1.6
-                        }}>
+                        <div style={{ marginBottom: '24px' }}>
+                          <h4 style={{ marginBottom: '12px', color: '#333' }}>المعلومات المستخرجة:</h4>
                           {result.extractedInfo.court && (
-                            <div>المحكمة: {result.extractedInfo.court}</div>
+                            <div style={{ marginBottom: '8px' }}>
+                              <strong>المحكمة:</strong> {result.extractedInfo.court}
+                            </div>
                           )}
-                          {result.extractedInfo.caseNumber && (
-                            <div>رقم القضية: {result.extractedInfo.caseNumber}</div>
+                          {result.extractedInfo.plaintiff && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <strong>المدعي:</strong> {result.extractedInfo.plaintiff}
+                            </div>
                           )}
-                          {result.extractedInfo.winningParty && (
-                            <div>الطرف الفائز: {result.extractedInfo.winningParty}</div>
+                          {result.extractedInfo.judgmentFor && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <strong>الحكم لصالح:</strong> {result.extractedInfo.judgmentFor}
+                            </div>
                           )}
-                          {result.extractedInfo.victoryType && (
-                            <div>نوع الفوز: {result.extractedInfo.victoryType}</div>
+                          {result.extractedInfo.mainTitle && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <strong>العنوان الرئيسي:</strong> {result.extractedInfo.mainTitle}
+                            </div>
                           )}
-                          {result.extractedInfo.field && (
-                            <div>المجال: {result.extractedInfo.field}</div>
+                          {result.extractedInfo.subTitle && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <strong>العنوان الفرعي:</strong> {result.extractedInfo.subTitle}
+                            </div>
+                          )}
+                          {result.extractedInfo.caseDate && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <strong>تاريخ الدعوى:</strong> {new Date(result.extractedInfo.caseDate).toLocaleDateString('ar-SA')}
+                            </div>
                           )}
                         </div>
-                      )}
 
-                      {result.extractedInfo?.summary && (
-                        <p style={{ 
-                          color: '#333', 
-                          fontSize: '14px',
-                          marginBottom: '12px',
-                          lineHeight: 1.6
-                        }}>
-                          {result.extractedInfo.summary}
-                        </p>
-                      )}
+                        {result.extractedInfo.summary && (
+                          <div style={{ 
+                            padding: '16px',
+                            background: '#f7fafc',
+                            borderRadius: '6px',
+                            marginBottom: '16px'
+                          }}>
+                            <strong style={{ display: 'block', marginBottom: '8px' }}>الملخص:</strong>
+                            <p style={{ margin: 0, lineHeight: 1.6 }}>
+                              {result.extractedInfo.summary}
+                            </p>
+                          </div>
+                        )}
 
-                      {result.extractedInfo?.keywords?.length > 0 && (
-                        <div style={{ marginBottom: '12px' }}>
-                          {result.extractedInfo.keywords.slice(0, 5).map((keyword, i) => (
-                            <span
-                              key={i}
-                              style={{
-                                display: 'inline-block',
-                                padding: '4px 8px',
-                                margin: '4px',
-                                background: '#e9ecef',
-                                borderRadius: '4px',
-                                fontSize: '12px'
-                              }}
-                            >
-                              {keyword}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                        {result.extractedInfo.keywords?.length > 0 && (
+                          <div>
+                            <strong style={{ display: 'block', marginBottom: '8px' }}>الكلمات المفتاحية:</strong>
+                            <div>
+                              {result.extractedInfo.keywords.map((keyword, i) => (
+                                <span
+                                  key={i}
+                                  style={{
+                                    display: 'inline-block',
+                                    padding: '6px 12px',
+                                    margin: '4px',
+                                    background: '#e2e8f0',
+                                    borderRadius: '4px',
+                                    fontSize: '13px'
+                                  }}
+                                >
+                                  {keyword}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
                       <button
                         onClick={() => {
                           setResult(null);
                           setFile(null);
                         }}
                         style={{
-                          padding: '8px 16px',
+                          padding: '10px 20px',
                           background: '#28a745',
                           color: 'white',
                           border: 'none',
-                          borderRadius: '4px',
+                          borderRadius: '6px',
                           cursor: 'pointer',
-                          fontSize: '14px'
+                          fontSize: '14px',
+                          flex: 1
                         }}
                       >
-                        رفع مستند آخر
+                        📤 رفع مستند آخر
                       </button>
-                    </>
-                  )}
-                </div>
+                      
+                      <button
+                        onClick={() => router.push(`/view/${result.documentId}`)}
+                        style={{
+                          padding: '10px 20px',
+                          background: '#007bff',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          flex: 1
+                        }}
+                      >
+                        👁️ عرض المستند
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
