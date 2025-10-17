@@ -3,6 +3,7 @@ import { authOptions } from '../../auth/[...nextauth]';
 import { prisma } from '../../../../lib/prisma';
 import { logError, logAudit } from '../../../../lib/logger';
 import { generateLawsuit, generateDefenseMemo } from '../../../../lib/aiService';
+import { getCaseTypeArabic } from '../../../../lib/helpers';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -98,15 +99,4 @@ export default async function handler(req, res) {
     
     res.status(500).json({ error: 'فشل في إنشاء المستند' });
   }
-}
-
-function getCaseTypeArabic(caseType) {
-  const mapping = {
-    'SALARY': 'أجر',
-    'BONUS': 'مكافأة',
-    'COMPENSATION': 'تعويض',
-    'PROOF': 'إثبات',
-    'OTHER': 'أخرى'
-  };
-  return mapping[caseType] || caseType;
 }
