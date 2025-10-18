@@ -281,10 +281,10 @@ export default function ClientLawyers() {
                       fontWeight: 'bold',
                       color: '#667eea'
                     }}>
-                      {lawyer.user.name?.charAt(0) || '👨‍⚖️'}
+                      {lawyer.name?.charAt(0) || '👨‍⚖️'}
                     </div>
                     <h3 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>
-                      {lawyer.user.name}
+                      {lawyer.name || 'محامي'}
                     </h3>
                     <div style={{ fontSize: '14px', opacity: 0.9 }}>
                       {lawyer.officeName || 'محامي مستقل'}
@@ -304,15 +304,15 @@ export default function ClientLawyers() {
                     }}>
                       <div>
                         <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffc107' }}>
-                          {'⭐'.repeat(Math.round(lawyer.rating))}
+                          {'⭐'.repeat(Math.round(lawyer.rating || 0))}
                         </div>
                         <div style={{ fontSize: '12px', color: '#666' }}>
-                          {lawyer.rating.toFixed(1)} ({lawyer.reviews?.length || 0} تقييم)
+                          {(lawyer.rating || 0).toFixed(1)} ({lawyer.totalReviews || 0} تقييم)
                         </div>
                       </div>
                       <div style={{ textAlign: 'left' }}>
                         <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#007bff' }}>
-                          {lawyer.totalCases}
+                          {lawyer.totalCases || 0}
                         </div>
                         <div style={{ fontSize: '12px', color: '#666' }}>
                           قضية
@@ -323,7 +323,7 @@ export default function ClientLawyers() {
                     {/* Experience */}
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
-                        <strong>الخبرة:</strong> {lawyer.yearsExperience} سنة
+                        <strong>الخبرة:</strong> {lawyer.yearsExperience || 0} سنة
                       </div>
                       {lawyer.licenseNumber && (
                         <div style={{ fontSize: '14px', color: '#666' }}>
