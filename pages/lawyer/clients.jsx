@@ -2,6 +2,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import ResponsiveHeader from '../../components/ResponsiveHeader';
 import { getStatusArabic } from '../../lib/helpers';
 
 export default function LawyerClients() {
@@ -63,56 +64,15 @@ export default function LawyerClients() {
 
   return (
     <div style={{ direction: 'rtl', minHeight: '100vh', background: '#f5f5f5' }}>
-      {/* Header */}
-      <div style={{ 
-        padding: '20px', 
-        borderBottom: '1px solid #eee',
-        background: 'white',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto', 
-          display: 'flex', 
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '24px' }}>👥</span>
-            <h1 style={{ margin: 0, fontSize: '20px' }}>عملائي</h1>
-          </div>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Link href="/">
-              <button style={{
-                padding: '10px 20px',
-                background: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}>
-                🔍 البحث
-              </button>
-            </Link>
-            <Link href="/lawyer/today">
-              <button style={{
-                padding: '10px 20px',
-                background: '#17a2b8',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}>
-                📅 عملي
-              </button>
-            </Link>
-          </div>
-        </div>
-      </div>
+      <ResponsiveHeader session={session} />
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+        {/* Page Title */}
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '28px', marginBottom: '8px' }}>👥 عملائي</h2>
+          <p style={{ color: '#666' }}>إدارة ومتابعة جميع عملائك وقضاياهم</p>
+        </div>
+
         {/* Search Bar */}
         <div style={{ marginBottom: '24px' }}>
           <input
@@ -173,7 +133,7 @@ export default function LawyerClients() {
             
             <div style={{ 
               display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
               gap: '20px'
             }}>
               {clients.map(client => (
@@ -208,12 +168,13 @@ export default function LawyerClients() {
                       justifyContent: 'center',
                       color: 'white',
                       fontSize: '20px',
-                      fontWeight: 'bold'
+                      fontWeight: 'bold',
+                      flexShrink: 0
                     }}>
                       {client.fullName.charAt(0)}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ margin: 0, fontSize: '18px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{ margin: 0, fontSize: '18px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {client.fullName}
                       </h3>
                       <div style={{ fontSize: '12px', color: '#666' }}>
@@ -223,7 +184,9 @@ export default function LawyerClients() {
                   </div>
 
                   <div style={{ fontSize: '14px', color: '#666', lineHeight: 2 }}>
-                    <div>📧 {client.email}</div>
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      📧 {client.email}
+                    </div>
                     <div>📞 {client.phone}</div>
                     {client.occupation && <div>💼 {client.occupation}</div>}
                   </div>
@@ -245,7 +208,10 @@ export default function LawyerClients() {
                             padding: '6px',
                             background: '#f8f9fa',
                             borderRadius: '4px',
-                            marginBottom: '4px'
+                            marginBottom: '4px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
                           }}
                         >
                           {c.caseNumber} - {getStatusArabic(c.status)}
@@ -264,7 +230,8 @@ export default function LawyerClients() {
                 justifyContent: 'center',
                 alignItems: 'center',
                 gap: '16px',
-                marginTop: '32px'
+                marginTop: '32px',
+                flexWrap: 'wrap'
               }}>
                 <button
                   disabled={page === 1}
