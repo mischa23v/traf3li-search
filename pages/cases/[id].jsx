@@ -1,7 +1,7 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
+import ResponsiveHeader from '../../components/ResponsiveHeader';
 import { getCaseTypeArabic, getStatusArabic, getStatusColor, getCourtTypeArabic, getAIDocTypeArabic } from '../../lib/helpers';
 
 export default function CaseDetail() {
@@ -85,25 +85,28 @@ export default function CaseDetail() {
 
   if (error || !caseData) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px', direction: 'rtl' }}>
-        <div style={{ fontSize: '64px', marginBottom: '16px' }}>⚠️</div>
-        <h3>حدث خطأ</h3>
-        <p style={{ color: '#666' }}>{error || 'القضية غير موجودة'}</p>
-        <button 
-          onClick={() => router.back()}
-          style={{
-            marginTop: '16px',
-            padding: '12px 24px',
-            background: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '16px'
-          }}
-        >
-          العودة
-        </button>
+      <div style={{ direction: 'rtl', minHeight: '100vh', background: '#f5f5f5' }}>
+        <ResponsiveHeader session={session} />
+        <div style={{ textAlign: 'center', padding: '60px' }}>
+          <div style={{ fontSize: '64px', marginBottom: '16px' }}>⚠️</div>
+          <h3>حدث خطأ</h3>
+          <p style={{ color: '#666' }}>{error || 'القضية غير موجودة'}</p>
+          <button 
+            onClick={() => router.back()}
+            style={{
+              marginTop: '16px',
+              padding: '12px 24px',
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
+          >
+            العودة
+          </button>
+        </div>
       </div>
     );
   }
@@ -113,7 +116,9 @@ export default function CaseDetail() {
 
   return (
     <div style={{ direction: 'rtl', minHeight: '100vh', background: '#f5f5f5' }}>
-      {/* Header */}
+      <ResponsiveHeader session={session} />
+
+      {/* Case Header with Back Button */}
       <div style={{ 
         padding: '20px', 
         borderBottom: '1px solid #eee',
@@ -272,7 +277,8 @@ export default function CaseDetail() {
               borderRadius: '8px 8px 0 0',
               display: 'flex',
               gap: '8px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              overflowX: 'auto'
             }}>
               <button
                 onClick={() => setActiveTab('overview')}
@@ -284,7 +290,8 @@ export default function CaseDetail() {
                   borderRadius: '6px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  fontWeight: '500'
+                  fontWeight: '500',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 نظرة عامة
@@ -299,7 +306,8 @@ export default function CaseDetail() {
                   borderRadius: '6px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  fontWeight: '500'
+                  fontWeight: '500',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 الجلسات ({caseData.hearings?.length || 0})
@@ -314,7 +322,8 @@ export default function CaseDetail() {
                   borderRadius: '6px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  fontWeight: '500'
+                  fontWeight: '500',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 المستندات ({(caseData.documents?.length || 0) + (caseData.aiDocuments?.length || 0)})
@@ -329,7 +338,8 @@ export default function CaseDetail() {
                   borderRadius: '6px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  fontWeight: '500'
+                  fontWeight: '500',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 الملاحظات ({caseData.notes?.length || 0})
@@ -647,6 +657,15 @@ export default function CaseDetail() {
           </div>
         </div>
       </div>
+
+      {/* Mobile responsive styles */}
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
