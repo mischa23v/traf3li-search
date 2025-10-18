@@ -239,10 +239,10 @@ export default function ClientLawyers() {
                       fontWeight: 'bold',
                       color: '#667eea'
                     }}>
-                      {lawyer.name?.charAt(0) || '👨‍⚖️'}
+                      {lawyer.user?.name?.charAt(0) || lawyer.name?.charAt(0) || '👨‍⚖️'}
                     </div>
                     <h3 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>
-                      {lawyer.name || 'محامي'}
+                      {lawyer.user?.name || lawyer.name || 'محامي'}
                     </h3>
                     <div style={{ fontSize: '14px', opacity: 0.9 }}>
                       {lawyer.officeName || 'محامي مستقل'}
@@ -262,15 +262,15 @@ export default function ClientLawyers() {
                     }}>
                       <div>
                         <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffc107' }}>
-                          {'⭐'.repeat(Math.round(lawyer.rating || 0))}
+                          {'⭐'.repeat(Math.round(lawyer.rating || lawyer.averageRating || 0))}
                         </div>
                         <div style={{ fontSize: '12px', color: '#666' }}>
-                          {(lawyer.rating || 0).toFixed(1)} ({lawyer.totalReviews || 0} تقييم)
+                          {(lawyer.rating || lawyer.averageRating || 0).toFixed(1)} ({lawyer.totalReviews || lawyer.reviewCount || 0} تقييم)
                         </div>
                       </div>
                       <div style={{ textAlign: 'left' }}>
                         <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#007bff' }}>
-                          {lawyer.totalCases || 0}
+                          {lawyer.totalCases || lawyer.completedCases || 0}
                         </div>
                         <div style={{ fontSize: '12px', color: '#666' }}>
                           قضية
