@@ -1,8 +1,7 @@
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
-import { signOut } from 'next-auth/react';
+import ResponsiveHeader from '../../components/ResponsiveHeader';
 
 export default function AdminUpload() {
   const { data: session, status } = useSession();
@@ -32,44 +31,7 @@ export default function AdminUpload() {
   if (session.user.role !== 'ADMIN') {
     return (
       <div style={{ direction: 'rtl', minHeight: '100vh', background: '#f5f5f5' }}>
-        <div style={{ 
-          padding: '20px', 
-          borderBottom: '1px solid #eee',
-          background: 'white',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ 
-            maxWidth: '1200px', 
-            margin: '0 auto', 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '24px' }}>⚖️</span>
-              <h1 style={{ margin: 0, fontSize: '20px' }}>نظام البحث القانوني</h1>
-            </div>
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-              <span style={{ fontSize: '14px' }}>
-                {session.user.email} ({session.user.role === 'ADMIN' ? 'مسؤول' : 'مستخدم'})
-              </span>
-              <button 
-                onClick={() => signOut()}
-                style={{
-                  padding: '10px 20px',
-                  background: '#dc3545',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                تسجيل الخروج
-              </button>
-            </div>
-          </div>
-        </div>
+        <ResponsiveHeader session={session} />
         
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
           <div style={{ fontSize: '64px', marginBottom: '16px' }}>🚫</div>
@@ -133,63 +95,8 @@ export default function AdminUpload() {
 
   return (
     <div style={{ direction: 'rtl', minHeight: '100vh', background: '#f5f5f5' }}>
-      {/* Header */}
-      <div style={{ 
-        padding: '20px', 
-        borderBottom: '1px solid #eee',
-        background: 'white',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto', 
-          display: 'flex', 
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '24px' }}>⚖️</span>
-            <h1 style={{ margin: 0, fontSize: '20px' }}>نظام البحث القانوني</h1>
-          </div>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px' }}>
-              {session.user.email} (مسؤول)
-            </span>
-            <Link href="/">
-              <button style={{
-                padding: '10px 20px',
-                background: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'background 0.3s'
-              }}
-              onMouseEnter={(e) => e.target.style.background = '#0056b3'}
-              onMouseLeave={(e) => e.target.style.background = '#007bff'}>
-                🔍 البحث في الأحكام
-              </button>
-            </Link>
-            <button 
-              onClick={() => signOut()}
-              style={{
-                padding: '10px 20px',
-                background: '#dc3545',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              تسجيل الخروج
-            </button>
-          </div>
-        </div>
-      </div>
+      <ResponsiveHeader session={session} />
 
-      {/* Main Content */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
         <div style={{ background: 'white', borderRadius: '8px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
           <div style={{ marginBottom: '32px' }}>
