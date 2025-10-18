@@ -164,16 +164,27 @@ export default function ClientCases() {
             <div style={{ fontSize: '64px', marginBottom: '16px' }}>📁</div>
             <h3>لا توجد قضايا</h3>
             <p>ابدأ بإنشاء قضية جديدة</p>
-            <Link href="/client/lawyers">
+            <Link href="/client/new-case">
               <button style={{
                 marginTop: '16px',
                 padding: '12px 24px',
-                background: '#28a745',
+                background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontSize: '16px'
+                fontSize: '16px',
+                fontWeight: 'bold',
+                boxShadow: '0 4px 12px rgba(17, 153, 142, 0.3)',
+                transition: 'all 0.3s'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 6px 16px rgba(17, 153, 142, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 12px rgba(17, 153, 142, 0.3)';
               }}>
                 ➕ قضية جديدة
               </button>
