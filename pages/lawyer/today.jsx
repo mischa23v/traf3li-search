@@ -2,6 +2,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import ResponsiveHeader from '../../components/ResponsiveHeader';
 import { getCaseTypeArabic, getStatusArabic, getStatusColor } from '../../lib/helpers';
 
 export default function LawyerToday() {
@@ -57,56 +58,15 @@ export default function LawyerToday() {
 
   return (
     <div style={{ direction: 'rtl', minHeight: '100vh', background: '#f5f5f5' }}>
-      {/* Header */}
-      <div style={{ 
-        padding: '20px', 
-        borderBottom: '1px solid #eee',
-        background: 'white',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto', 
-          display: 'flex', 
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '24px' }}>⚖️</span>
-            <h1 style={{ margin: 0, fontSize: '20px' }}>عملي اليوم</h1>
-          </div>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Link href="/">
-              <button style={{
-                padding: '10px 20px',
-                background: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}>
-                🔍 البحث
-              </button>
-            </Link>
-            <Link href="/lawyer/clients">
-              <button style={{
-                padding: '10px 20px',
-                background: '#6c757d',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}>
-                👥 العملاء
-              </button>
-            </Link>
-          </div>
-        </div>
-      </div>
+      <ResponsiveHeader session={session} />
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+        {/* Page Title */}
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '28px', marginBottom: '8px' }}>⚖️ عملي اليوم</h2>
+          <p style={{ color: '#666' }}>جلساتك وقضاياك لهذا اليوم والأيام القادمة</p>
+        </div>
+
         {/* Stats Cards */}
         <div style={{ 
           display: 'grid', 
@@ -219,9 +179,11 @@ export default function LawyerToday() {
                     display: 'flex', 
                     justifyContent: 'space-between',
                     alignItems: 'start',
-                    marginBottom: '12px'
+                    marginBottom: '12px',
+                    flexWrap: 'wrap',
+                    gap: '12px'
                   }}>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1, minWidth: '250px' }}>
                       <h3 style={{ margin: '0 0 8px 0', fontSize: '18px' }}>
                         قضية رقم: {caseItem.caseNumber}
                       </h3>
@@ -251,7 +213,12 @@ export default function LawyerToday() {
                     borderRadius: '6px',
                     marginBottom: '12px'
                   }}>
-                    <div style={{ fontSize: '14px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                    <div style={{ 
+                      fontSize: '14px', 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
+                      gap: '12px' 
+                    }}>
                       <div>
                         <strong>⏰ الوقت:</strong> {caseItem.nextHearingTime || 'لم يحدد'}
                       </div>
@@ -264,7 +231,7 @@ export default function LawyerToday() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     <button
                       onClick={() => router.push(`/cases/${caseItem.id}`)}
                       style={{
@@ -329,10 +296,12 @@ export default function LawyerToday() {
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '16px'
                   }}
                 >
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: '200px' }}>
                     <h4 style={{ margin: '0 0 8px 0' }}>
                       قضية رقم: {caseItem.caseNumber}
                     </h4>
@@ -363,8 +332,7 @@ export default function LawyerToday() {
                       border: 'none',
                       borderRadius: '6px',
                       cursor: 'pointer',
-                      fontSize: '14px',
-                      marginRight: '16px'
+                      fontSize: '14px'
                     }}
                   >
                     التفاصيل
