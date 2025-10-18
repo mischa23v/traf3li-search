@@ -2,6 +2,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import ResponsiveHeader from '../../components/ResponsiveHeader';
 
 export default function ClientLawyers() {
   const { data: session, status } = useSession();
@@ -66,58 +67,15 @@ export default function ClientLawyers() {
 
   return (
     <div style={{ direction: 'rtl', minHeight: '100vh', background: '#f5f5f5' }}>
-      {/* Header */}
-      <div style={{ 
-        padding: '20px', 
-        borderBottom: '1px solid #eee',
-        background: 'white',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto', 
-          display: 'flex', 
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '24px' }}>👨‍⚖️</span>
-            <h1 style={{ margin: 0, fontSize: '20px' }}>البحث عن محامي</h1>
-          </div>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Link href="/">
-              <button style={{
-                padding: '10px 20px',
-                background: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}>
-                🔍 البحث في الأحكام
-              </button>
-            </Link>
-            {session.user.isClient && (
-              <Link href="/client/cases">
-                <button style={{
-                  padding: '10px 20px',
-                  background: '#17a2b8',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}>
-                  📁 قضاياي
-                </button>
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
+      <ResponsiveHeader session={session} />
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+        {/* Page Title */}
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '28px', marginBottom: '8px' }}>👨‍⚖️ البحث عن محامي</h2>
+          <p style={{ color: '#666' }}>اختر المحامي المناسب لقضيتك</p>
+        </div>
+
         {/* Filters */}
         <div style={{
           background: 'white',
@@ -237,7 +195,7 @@ export default function ClientLawyers() {
             
             <div style={{ 
               display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
               gap: '24px'
             }}>
               {lawyers.map(lawyer => (
@@ -421,7 +379,8 @@ export default function ClientLawyers() {
                 justifyContent: 'center',
                 alignItems: 'center',
                 gap: '16px',
-                marginTop: '32px'
+                marginTop: '32px',
+                flexWrap: 'wrap'
               }}>
                 <button
                   disabled={page === 1}
