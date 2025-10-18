@@ -2,6 +2,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import ResponsiveHeader from '../../components/ResponsiveHeader';
 import { getCaseTypeArabic, getStatusArabic, getStatusColor } from '../../lib/helpers';
 
 export default function ClientCases() {
@@ -64,56 +65,15 @@ export default function ClientCases() {
 
   return (
     <div style={{ direction: 'rtl', minHeight: '100vh', background: '#f5f5f5' }}>
-      {/* Header */}
-      <div style={{ 
-        padding: '20px', 
-        borderBottom: '1px solid #eee',
-        background: 'white',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto', 
-          display: 'flex', 
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '24px' }}>📁</span>
-            <h1 style={{ margin: 0, fontSize: '20px' }}>قضاياي</h1>
-          </div>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Link href="/">
-              <button style={{
-                padding: '10px 20px',
-                background: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}>
-                🔍 البحث
-              </button>
-            </Link>
-            <Link href="/client/lawyers">
-              <button style={{
-                padding: '10px 20px',
-                background: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}>
-                ➕ قضية جديدة
-              </button>
-            </Link>
-          </div>
-        </div>
-      </div>
+      <ResponsiveHeader session={session} />
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+        {/* Page Title */}
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '28px', marginBottom: '8px' }}>📁 قضاياي</h2>
+          <p style={{ color: '#666' }}>إدارة ومتابعة جميع قضاياك</p>
+        </div>
+
         {/* Filter Tabs */}
         <div style={{ 
           display: 'flex', 
@@ -121,7 +81,8 @@ export default function ClientCases() {
           marginBottom: '24px',
           background: 'white',
           padding: '16px',
-          borderRadius: '8px'
+          borderRadius: '8px',
+          overflowX: 'auto'
         }}>
           <button
             onClick={() => setFilter('all')}
@@ -133,7 +94,8 @@ export default function ClientCases() {
               borderRadius: '6px',
               cursor: 'pointer',
               fontSize: '14px',
-              fontWeight: '500'
+              fontWeight: '500',
+              whiteSpace: 'nowrap'
             }}
           >
             جميع القضايا
@@ -148,7 +110,8 @@ export default function ClientCases() {
               borderRadius: '6px',
               cursor: 'pointer',
               fontSize: '14px',
-              fontWeight: '500'
+              fontWeight: '500',
+              whiteSpace: 'nowrap'
             }}
           >
             القضايا النشطة
@@ -163,7 +126,8 @@ export default function ClientCases() {
               borderRadius: '6px',
               cursor: 'pointer',
               fontSize: '14px',
-              fontWeight: '500'
+              fontWeight: '500',
+              whiteSpace: 'nowrap'
             }}
           >
             القضايا المنتهية
@@ -242,9 +206,11 @@ export default function ClientCases() {
                   display: 'flex', 
                   justifyContent: 'space-between',
                   alignItems: 'start',
-                  marginBottom: '16px'
+                  marginBottom: '16px',
+                  flexWrap: 'wrap',
+                  gap: '12px'
                 }}>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: '250px' }}>
                     <h3 style={{ margin: '0 0 12px 0', fontSize: '20px' }}>
                       قضية رقم: {caseItem.caseNumber}
                     </h3>
