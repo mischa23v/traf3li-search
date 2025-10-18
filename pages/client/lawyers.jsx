@@ -344,29 +344,64 @@ export default function ClientLawyers() {
                       {lawyer.acceptingCases ? '✓ متاح لقبول القضايا' : '✗ غير متاح حالياً'}
                     </div>
 
-                    {/* Action Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/lawyers/${lawyer.id}`);
-                      }}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: '#007bff',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: 'bold',
-                        transition: 'background 0.3s'
-                      }}
-                      onMouseEnter={(e) => e.target.style.background = '#0056b3'}
-                      onMouseLeave={(e) => e.target.style.background = '#007bff'}
-                    >
-                      عرض الملف الشخصي
-                    </button>
+                    {/* Action Buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/lawyers/${lawyer.id}`);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: '#007bff',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          transition: 'background 0.3s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = '#0056b3'}
+                        onMouseLeave={(e) => e.target.style.background = '#007bff'}
+                      >
+                        عرض الملف الشخصي
+                      </button>
+
+                      {/* NEW BUTTON - Start Case with Lawyer */}
+                      {lawyer.acceptingCases && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/client/new-case?lawyerId=${lawyer.id}`);
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            boxShadow: '0 4px 12px rgba(17, 153, 142, 0.3)',
+                            transition: 'all 0.3s'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.transform = 'translateY(-2px)';
+                            e.target.style.boxShadow = '0 6px 16px rgba(17, 153, 142, 0.4)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.transform = 'translateY(0)';
+                            e.target.style.boxShadow = '0 4px 12px rgba(17, 153, 142, 0.3)';
+                          }}
+                        >
+                          ➕ بدء قضية مع هذا المحامي
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
