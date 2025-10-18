@@ -1,11 +1,9 @@
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import DocumentSearch from '../components/DocumentSearch';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
+import ResponsiveHeader from '../components/ResponsiveHeader';
 
 export default function Home() {
   const { data: session } = useSession();
-  const router = useRouter();
 
   if (!session) {
     return (
@@ -421,161 +419,9 @@ export default function Home() {
     );
   }
 
-  // Extract user ID from email (before @)
-  const userId = session.user.email?.split('@')[0] || session.user.email;
-  const userRole = session.user.role === 'ADMIN' ? 'مسؤول' : 
-                   session.user.isLawyer ? 'محامي' :
-                   session.user.isClient ? 'عميل' : 'مستخدم';
-
   return (
     <div style={{ direction: 'rtl', minHeight: '100vh', background: '#f5f5f5' }}>
-      <div style={{ 
-        padding: '20px', 
-        borderBottom: '1px solid #eee',
-        background: 'white',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto', 
-          display: 'flex', 
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '24px' }}>⚖️</span>
-            <h1 style={{ margin: 0, fontSize: '20px' }}>نظام البحث القانوني</h1>
-          </div>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <span style={{ 
-              padding: '8px 16px', 
-              background: '#f0f0f0', 
-              borderRadius: '20px',
-              fontSize: '14px'
-            }}>
-              {userId} ({userRole})
-            </span>
-            
-            {/* Role-based navigation buttons */}
-            {session.user.isLawyer && (
-              <>
-                <Link href="/lawyer/today">
-                  <button style={{
-                    padding: '10px 20px',
-                    background: '#17a2b8',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    transition: 'background 0.3s'
-                  }}
-                  onMouseEnter={(e) => e.target.style.background = '#138496'}
-                  onMouseLeave={(e) => e.target.style.background = '#17a2b8'}>
-                    📅 عملي
-                  </button>
-                </Link>
-                <Link href="/lawyer/clients">
-                  <button style={{
-                    padding: '10px 20px',
-                    background: '#6c757d',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    transition: 'background 0.3s'
-                  }}
-                  onMouseEnter={(e) => e.target.style.background = '#5a6268'}
-                  onMouseLeave={(e) => e.target.style.background = '#6c757d'}>
-                    👥 عملائي
-                  </button>
-                </Link>
-              </>
-            )}
-            
-            {session.user.isClient && (
-              <>
-                <Link href="/client/cases">
-                  <button style={{
-                    padding: '10px 20px',
-                    background: '#17a2b8',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    transition: 'background 0.3s'
-                  }}
-                  onMouseEnter={(e) => e.target.style.background = '#138496'}
-                  onMouseLeave={(e) => e.target.style.background = '#17a2b8'}>
-                    📁 قضاياي
-                  </button>
-                </Link>
-                <Link href="/client/lawyers">
-                  <button style={{
-                    padding: '10px 20px',
-                    background: '#6c757d',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    transition: 'background 0.3s'
-                  }}
-                  onMouseEnter={(e) => e.target.style.background = '#5a6268'}
-                  onMouseLeave={(e) => e.target.style.background = '#6c757d'}>
-                    👨‍⚖️ البحث عن محامي
-                  </button>
-                </Link>
-              </>
-            )}
-            
-            {session.user.role === 'ADMIN' && (
-              <Link href="/admin/upload">
-                <button style={{
-                  padding: '10px 20px',
-                  background: '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  transition: 'background 0.3s'
-                }}
-                onMouseEnter={(e) => e.target.style.background = '#218838'}
-                onMouseLeave={(e) => e.target.style.background = '#28a745'}>
-                  📤 رفع مستند
-                </button>
-              </Link>
-            )}
-            
-            <button 
-              onClick={() => signOut()}
-              style={{
-                padding: '10px 20px',
-                background: '#dc3545',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                transition: 'background 0.3s'
-              }}
-              onMouseEnter={(e) => e.target.style.background = '#c82333'}
-              onMouseLeave={(e) => e.target.style.background = '#dc3545'}
-            >
-              تسجيل الخروج
-            </button>
-          </div>
-        </div>
-      </div>
+      <ResponsiveHeader session={session} />
       
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
         <DocumentSearch />
